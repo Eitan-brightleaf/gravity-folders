@@ -20,7 +20,7 @@ add_action( 'wp_ajax_delete_folder', 'handle_folder_deletion' );
  *
  * @return void
  */
-function register_form_folders_submenu(): void {
+function register_form_folders_submenu() {
 	add_submenu_page(
 		'gf_edit_forms',
 		'Form Folders',
@@ -39,7 +39,7 @@ function register_form_folders_submenu(): void {
  *
  * @return void
  */
-function register_form_folders_taxonomy(): void {
+function register_form_folders_taxonomy() {
 	register_taxonomy(
         'gf_form_folders',
         'gf_form',
@@ -61,8 +61,8 @@ function register_form_folders_taxonomy(): void {
  *
  * @return void Sends a JSON response indicating success or failure.
  */
-function handle_create_folder(): void {
-	if ( ! isset( $_POST['nonce'] ) || ! wp_verify_nonce( $_POST['nonce'], 'create_folder' ) ) {
+function handle_create_folder() {
+	if ( ! isset( $_POST['nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['nonce'] ) ), 'create_folder' ) ) {
 		wp_send_json_error( [ 'message' => 'Invalid nonce. Request rejected.' ], 403 );
 		wp_die();
 	}
@@ -77,7 +77,7 @@ function handle_create_folder(): void {
 		wp_die();
 	}
 
-	$folder_name = sanitize_text_field( $_POST['folder_name'] );
+	$folder_name = sanitize_text_field( wp_unslash( $_POST['folder_name'] ) );
 	$inserted    = wp_insert_term( $folder_name, 'gf_form_folders' );
 
 	if ( is_wp_error( $inserted ) ) {
@@ -98,8 +98,8 @@ function handle_create_folder(): void {
  *
  * @return void Outputs a JSON response indicating success or failure.
  */
-function handle_assign_form_to_folder(): void {
-	if ( ! isset( $_POST['nonce'] ) || ! wp_verify_nonce( $_POST['nonce'], 'assign_form' ) ) {
+function handle_assign_form_to_folder() {
+	if ( ! isset( $_POST['nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['nonce'] ) ), 'assign_form' ) ) {
 		wp_send_json_error( [ 'message' => 'Invalid nonce. Request rejected.' ], 403 );
 		wp_die();
 	}
@@ -136,8 +136,8 @@ function handle_assign_form_to_folder(): void {
  *
  * @return void Outputs a JSON response and terminates execution.
  */
-function handle_remove_form_from_folder(): void {
-	if ( ! isset( $_POST['nonce'] ) || ! wp_verify_nonce( $_POST['nonce'], 'remove_form' ) ) {
+function handle_remove_form_from_folder() {
+	if ( ! isset( $_POST['nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['nonce'] ) ), 'remove_form' ) ) {
 		wp_send_json_error( [ 'message' => 'Invalid nonce. Request rejected.' ], 403 );
 		wp_die();
 	}
@@ -174,8 +174,8 @@ function handle_remove_form_from_folder(): void {
  *
  * @return void This function exits with a JSON response and does not return.
  */
-function handle_folder_renaming(): void {
-	if ( ! isset( $_POST['nonce'] ) || ! wp_verify_nonce( $_POST['nonce'], 'rename_folder' ) ) {
+function handle_folder_renaming() {
+	if ( ! isset( $_POST['nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['nonce'] ) ), 'rename_folder' ) ) {
 		wp_send_json_error( [ 'message' => 'Invalid nonce. Request rejected.' ], 403 );
 		wp_die();
 	}
@@ -186,7 +186,7 @@ function handle_folder_renaming(): void {
 	}
 
 	$folder_id   = absint( $_POST['folder_id'] );
-	$folder_name = sanitize_text_field( $_POST['folder_name'] );
+	$folder_name = sanitize_text_field( wp_unslash( $_POST['folder_name'] ) );
 
 	$folder = get_term( $folder_id, 'gf_form_folders' );
 	if ( is_wp_error( $folder ) || ! $folder ) {
@@ -203,8 +203,8 @@ function handle_folder_renaming(): void {
 	wp_die();
 }
 
-function handle_folder_deletion(): void {
-	if ( ! isset( $_POST['nonce'] ) || ! wp_verify_nonce( $_POST['nonce'], 'delete_folder' ) ) {
+function handle_folder_deletion() {
+	if ( ! isset( $_POST['nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['nonce'] ) ), 'delete_folder' ) ) {
 		wp_send_json_error( [ 'message' => 'Invalid nonce. Request rejected.' ], 403 );
 		wp_die();
 	}
@@ -233,9 +233,9 @@ function handle_folder_deletion(): void {
  *
  * @return void
  */
-function render_form_folders_page(): void {
+function render_form_folders_page() {
 	if ( ! current_user_can( 'gform_full_access' ) ) {
-		wp_die( __( 'You do not have sufficient permissions to access this page.' ) );
+		wp_die( 'You do not have sufficient permissions to access this page.' );
 	}
 
 	$folder_id = isset( $_GET['folder_id'] ) ? absint( $_GET['folder_id'] ) : 0;
@@ -273,7 +273,7 @@ function render_form_folders_page(): void {
 			foreach ( $forms as $form ) {
 				$remove_form_nonce = wp_create_nonce( 'remove_form' );
 				$form_terms        = wp_get_object_terms( $form['id'], 'gf_form_folders', [ 'fields' => 'ids' ] );
-				if ( in_array( $folder_id, $form_terms ) ) {
+				if ( in_array( $folder_id, $form_terms, true ) ) {
 					$found         = true;
 					$settings_info = GFForms::get_form_settings_sub_menu_items( $form['id'] );
 					?>
