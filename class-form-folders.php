@@ -104,6 +104,7 @@ class Form_Folders extends GFAddOn {
 	public function init_admin() {
 		parent::init_admin();
 		add_action( 'admin_menu', [ $this, 'register_form_folders_submenu' ], 15 );
+
 		add_action( 'wp_ajax_create_folder', [ $this, 'handle_create_folder' ] );
 		add_action( 'wp_ajax_assign_form_to_folder', [ $this, 'handle_assign_form_to_folder' ] );
 		add_action( 'wp_ajax_remove_form_from_folder', [ $this, 'handle_remove_form_from_folder' ] );
@@ -462,19 +463,26 @@ class Form_Folders extends GFAddOn {
 
 			<script>
                 document.addEventListener('DOMContentLoaded', function () {
-                    delete_folder = function(folder_id, nonce) {
-                        const body = `action=delete_folder&folder_id=${encodeURIComponent(folder_id)}&nonce=${encodeURIComponent(nonce)}`;
-                        fetch(ajaxurl, {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/x-www-form-urlencoded', // Specify the correct content type
-                            },
-                            body,
-                        })
-                            .then(response => response.json())
-                            .then(() => location.reload())
-                            .catch(error => console.error('Error:', error));
-                    }
+                    // Enable hover functionality
+                    document.querySelectorAll('.dropdown').forEach(function (dropdown) {
+                        const link = dropdown.querySelector('.link');
+                        const menu = dropdown.querySelector('.dropdown-menu');
+
+                        // Show dropdown on hover
+                        link.addEventListener('mouseover', function () {
+                            menu.style.display = 'block';
+                        });
+
+                        menu.addEventListener('mouseover', function () {
+                            menu.style.display = 'block';
+                        });
+
+                        // Hide dropdown when the mouse leaves
+                        dropdown.addEventListener('mouseleave', function () {
+                            menu.style.display = 'none';
+                        });
+                    });
+
                     function handleFormSubmission(formId, action) {
                         document.getElementById(formId).addEventListener('submit', function (e) {
                             e.preventDefault();
@@ -489,10 +497,31 @@ class Form_Folders extends GFAddOn {
                                 .then(response => response.json())
                                 .then(() => location.reload());
                         });
-                    }
+                    };
+                    handleFormSubmission('rename-folder-form', 'rename_folder');
+                    remove_form = function (formID, nonce) {
+                        const body = `action=remove_form_from_folder&form_id=${encodeURIComponent(formID)}&nonce=${encodeURIComponent(nonce)}`;
 
-                    handleFormSubmission('create-folder-form', 'create_folder');
-                    handleFormSubmission('assign-form-form', 'assign_form_to_folder');
+                        fetch(ajaxurl, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/x-www-form-urlencoded', // Specify the correct content type
+                            },
+                            body,
+                        })
+                            .then(response => response.json())
+                            .then(() => location.reload())
+                            .catch(error => console.error('Error:', error));
+                    };
+                    document.querySelectorAll(".copyable").forEach(function (element) {
+                        element.addEventListener("click", function () {
+                            navigator.clipboard.writeText(element.innerHTML);
+                            element.style.backgroundColor = "#d4edda"; // Light green to indicate success
+                            setTimeout(() => {
+                                element.style.backgroundColor = ""; // Revert after a short delay
+                            }, 1000);
+                        });
+                    });
                 });
 			</script>
 
