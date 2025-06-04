@@ -351,76 +351,17 @@ function render_form_folders_page() {
 		</table>
 		<br><br>
 
-		<h2>Rename Folder</h2>
+		<!--<h2>Rename Folder</h2>-->
 		<form id="rename-folder-form">
-			<input type="text" id="folder_name" name="folder_name" placeholder="Folder Name" required>
+            <label for="folder_name" style="font-size: 1.5em; font-weight: bold; margin-bottom: 0.5em; display: inline-block;">Rename Folder</label><br>
+            <input type="text" id="folder_name" name="folder_name" placeholder="Folder Name" required>
 			<input type="hidden" id="folder_id" name="folder_id" value="<?php echo esc_attr( $folder_id ); ?>">
 			<input type="hidden" name="nonce" value="<?php echo esc_attr( $rename_folder_nonce ); ?>">
 			<button type="submit">Rename Folder</button>
 		</form>
 
 		<script>
-            document.addEventListener('DOMContentLoaded', function () {
-                // Enable hover functionality
-                document.querySelectorAll('.dropdown').forEach(function (dropdown) {
-                    const link = dropdown.querySelector('.link');
-                    const menu = dropdown.querySelector('.dropdown-menu');
 
-                    // Show dropdown on hover
-                    link.addEventListener('mouseover', function () {
-                        menu.style.display = 'block';
-                    });
-
-                    menu.addEventListener('mouseover', function () {
-                        menu.style.display = 'block';
-                    });
-
-                    // Hide dropdown when the mouse leaves
-                    dropdown.addEventListener('mouseleave', function () {
-                        menu.style.display = 'none';
-                    });
-                });
-
-                function handleFormSubmission(formId, action) {
-                    document.getElementById(formId).addEventListener('submit', function (e) {
-                        e.preventDefault();
-
-                        let formData = new FormData(this);
-                        formData.append('action', action);
-
-                        fetch(ajaxurl, {
-                            method: 'POST',
-                            body: formData
-                        })
-                            .then(response => response.json())
-                            .then(() => location.reload());
-                    });
-                };
-                handleFormSubmission('rename-folder-form', 'rename_folder');
-                remove_form = function (formID, nonce) {
-                    const body = `action=remove_form_from_folder&form_id=${encodeURIComponent(formID)}&nonce=${encodeURIComponent(nonce)}`;
-
-                    fetch(ajaxurl, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/x-www-form-urlencoded', // Specify the correct content type
-                        },
-                        body,
-                    })
-                        .then(response => response.json())
-                        .then(() => location.reload())
-                        .catch(error => console.error('Error:', error));
-                };
-                document.querySelectorAll(".copyable").forEach(function (element) {
-                    element.addEventListener("click", function () {
-                        navigator.clipboard.writeText(element.innerHTML);
-                        element.style.backgroundColor = "#d4edda"; // Light green to indicate success
-                        setTimeout(() => {
-                            element.style.backgroundColor = ""; // Revert after a short delay
-                        }, 1000);
-                    });
-                });
-            });
 		</script>
 
 		<?php
@@ -449,11 +390,11 @@ function render_form_folders_page() {
 				$form_count = count( get_objects_in_term( $folder->term_id, 'gf_form_folders' ) );
 				echo '<li style="font-size: 3em;">
 				<a href="' . esc_url( admin_url( 'admin.php?page=gf-form-folders&folder_id=' . $folder->term_id ) ) . '">
-				<span class="dashicons dashicons-category" style="margin-right: 5px;"></span> ' . esc_html( $folder->name ) . ' (' . $form_count . ')
+				<span class="dashicons dashicons-category" style="margin-right: 5px;"></span> ' . esc_html( $folder->name ) . ' (' . esc_html( $form_count ) . ')
 				</a>';
 				if ( ! $form_count ) {
 					$delete_folder_nonce = wp_create_nonce( 'delete_folder' );
-					echo '&nbsp;&nbsp;<button class="button" onclick="delete_folder(' . $folder->term_id . ', \'' . $delete_folder_nonce . '\')">Delete Folder</button>';
+					echo '&nbsp;&nbsp;<button class="button" onclick="delete_folder(' . esc_attr( $folder->term_id ) . ', \'' . esc_attr( $delete_folder_nonce ) . '\')">Delete Folder</button>';
 				}
 				echo '</li>';
 				echo '<br><br>';
