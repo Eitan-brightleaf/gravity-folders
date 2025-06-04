@@ -94,6 +94,12 @@ class Form_Folders extends GFAddOn {
 	public function init() {
 		parent::init();
 		$this->register_form_folders_taxonomy();
+
+		add_action( 'wp_ajax_create_folder', [ $this, 'handle_create_folder' ] );
+		add_action( 'wp_ajax_assign_form_to_folder', [ $this, 'handle_assign_form_to_folder' ] );
+		add_action( 'wp_ajax_remove_form_from_folder', [ $this, 'handle_remove_form_from_folder' ] );
+		add_action( 'wp_ajax_rename_folder', [ $this, 'handle_folder_renaming' ] );
+		add_action( 'wp_ajax_delete_folder', [ $this, 'handle_folder_deletion' ] );
 	}
 
 	/**
@@ -104,12 +110,6 @@ class Form_Folders extends GFAddOn {
 	public function init_admin() {
 		parent::init_admin();
 		add_action( 'admin_menu', [ $this, 'register_form_folders_submenu' ], 15 );
-
-		add_action( 'wp_ajax_create_folder', [ $this, 'handle_create_folder' ] );
-		add_action( 'wp_ajax_assign_form_to_folder', [ $this, 'handle_assign_form_to_folder' ] );
-		add_action( 'wp_ajax_remove_form_from_folder', [ $this, 'handle_remove_form_from_folder' ] );
-		add_action( 'wp_ajax_rename_folder', [ $this, 'handle_folder_renaming' ] );
-		add_action( 'wp_ajax_delete_folder', [ $this, 'handle_folder_deletion' ] );
 	}
 
 	/**
@@ -124,7 +124,7 @@ class Form_Folders extends GFAddOn {
 			'Form Folders',
 			'gform_full_access',
 			'gf-form-folders',
-			[ $this, 'render_form_folders_page' ]
+			[ $this, 'form_folders_page' ]
 		);
 	}
 	/**
@@ -334,11 +334,28 @@ class Form_Folders extends GFAddOn {
 	 *
 	 * @return void
 	 */
-	public function render_form_folders_page() {
+	public function form_folders_page() {
 		if ( ! current_user_can( 'gform_full_access' ) ) {
 			wp_die( 'You do not have sufficient permissions to access this page.' );
 		}
 
+        if ( rgget( 'folder_id' ) ) {
+            $this->render_single_folder_page();
+        } else {
+            $this->render_form_folders_page();
+        }
+	}
+
+	/**
+     * Renders a single folder page with its assigned forms.
+     *
+	 * @return void
+	 */
+    private function render_single_folder_page() {
+
+        if ( ! isset( $_GET['view_folder_nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_GET['view_folder_nonce'] ) ), 'view_folder' ) ) {
+            wp_die( 'You do not have sufficient permissions to access this page.' );
+        }
 		$folder_id = isset( $_GET['folder_id'] ) ? absint( $_GET['folder_id'] ) : 0;
 
 		if ( $folder_id ) {
@@ -349,23 +366,23 @@ class Form_Folders extends GFAddOn {
 			}
 			?>
 
-			<div class="wrap">
-			<h1>Forms in Folder: <?php echo esc_html( $folder->name ); ?> </h1>
-			<!--Back button-->
-			<a href="<?php echo esc_url( admin_url( 'admin.php?page=gf-form-folders' ) ); ?>" class="button">Back to All
-				Folders</a>
+            <div class="wrap">
+            <h1>Forms in Folder: <?php echo esc_html( $folder->name ); ?> </h1>
+            <!--Back button-->
+            <a href="<?php echo esc_url( admin_url( 'admin.php?page=gf-form-folders' ) ); ?>" class="button">Back to All
+                Folders</a>
 
-			<!--Forms Table-->
-			<table class="wp-list-table widefat fixed striped">
-				<thead>
-				<tr>
-					<th>Form Name</th>
-					<th>Shortcode</th>
-					<th>Settings</th>
-					<th>Actions</th>
-				</tr>
-				</thead>
-				<tbody>
+            <!--Forms Table-->
+            <table class="wp-list-table widefat fixed striped">
+                <thead>
+                <tr>
+                    <th>Form Name</th>
+                    <th>Shortcode</th>
+                    <th>Settings</th>
+                    <th>Actions</th>
+                </tr>
+                </thead>
+                <tbody>
 
 				<?php
 				$forms = GFAPI::get_forms();
@@ -378,67 +395,67 @@ class Form_Folders extends GFAddOn {
 						$found         = true;
 						$settings_info = GFForms::get_form_settings_sub_menu_items( $form['id'] );
 						?>
-						<tr>
-							<td>
-								<a href="<?php echo esc_url( admin_url( 'admin.php?page=gf_edit_forms&id=' . $form['id'] ) ); ?>"><?php echo esc_html( $form['title'] ); ?></a>
-							</td>
-							<td><code class="copyable" style="cursor: pointer;">[gravityform
-									id="<?php echo esc_attr( $form['id'] ); ?>" title="false" description="false"]</code></td>
-							<td>
-								<a href="<?php echo esc_url( admin_url( 'admin.php?page=gf_edit_forms&id=' . $form['id'] ) ); ?>">Edit</a>
-								|
-								<div class="dropdown" style="display: inline-block; position: relative;">
-									<a href="<?php echo esc_url( admin_url( 'admin.php?page=gf_entries&view=entries&id=' . $form['id'] ) ); ?>"
-										class="link">Entries</a>
-									<ul class="dropdown-menu"
-									    style="display: none; list-style: none; margin: 0; padding: 5px 0; background: #fff; border: 1px solid #ddd; position: absolute; top: 20px; left: 0; z-index: 1000; width: 200px; box-shadow: 0 1px 6px rgba(0, 0, 0, 0.1);">
-										<li style="padding: 5px 10px;"><a
-												href="<?php echo esc_url( admin_url( 'admin.php?page=gf_entries&id=' . $form['id'] ) ); ?>">Entries</a>
-										</li>
-										<li style="padding: 5px 10px;"><a
-												href="<?php echo esc_url( admin_url( 'admin.php?page=gf_export&view=export_entry&id=' . $form['id'] ) ); ?>">Export
-												Entries</a></li>
+                        <tr>
+                            <td>
+                                <a href="<?php echo esc_url( admin_url( 'admin.php?page=gf_edit_forms&id=' . $form['id'] ) ); ?>"><?php echo esc_html( $form['title'] ); ?></a>
+                            </td>
+                            <td><code class="copyable" style="cursor: pointer;">[gravityform
+                                    id="<?php echo esc_attr( $form['id'] ); ?>" title="false" description="false"]</code></td>
+                            <td>
+                                <a href="<?php echo esc_url( admin_url( 'admin.php?page=gf_edit_forms&id=' . $form['id'] ) ); ?>">Edit</a>
+                                |
+                                <div class="dropdown" style="display: inline-block; position: relative;">
+                                    <a href="<?php echo esc_url( admin_url( 'admin.php?page=gf_entries&view=entries&id=' . $form['id'] ) ); ?>"
+                                        class="link">Entries</a>
+                                    <ul class="dropdown-menu"
+                                        style="display: none; list-style: none; margin: 0; padding: 5px 0; background: #fff; border: 1px solid #ddd; position: absolute; top: 20px; left: 0; z-index: 1000; width: 200px; box-shadow: 0 1px 6px rgba(0, 0, 0, 0.1);">
+                                        <li style="padding: 5px 10px;"><a
+                                                    href="<?php echo esc_url( admin_url( 'admin.php?page=gf_entries&id=' . $form['id'] ) ); ?>">Entries</a>
+                                        </li>
+                                        <li style="padding: 5px 10px;"><a
+                                                    href="<?php echo esc_url( admin_url( 'admin.php?page=gf_export&view=export_entry&id=' . $form['id'] ) ); ?>">Export
+                                                Entries</a></li>
 										<?php
 										if ( in_array( 'gravityview-importer/gravityview-importer.php', get_option( 'active_plugins' ), true ) ) {
 											?>
-											<li style="padding: 5px 10px;"><a
-													href="<?php echo esc_url( admin_url( 'admin.php?page=gv-admin-import-entries#targetForm=' . $form['id'] ) ); ?>">Import
-													Entries</a></li>
+                                            <li style="padding: 5px 10px;"><a
+                                                        href="<?php echo esc_url( admin_url( 'admin.php?page=gv-admin-import-entries#targetForm=' . $form['id'] ) ); ?>">Import
+                                                    Entries</a></li>
 											<?php
 										}
 										?>
-									</ul>
-								</div>
-								|
-								<div class="dropdown" style="display: inline-block; position: relative;">
-									<a href="<?php echo esc_url( admin_url( 'admin.php?page=gf_edit_forms&view=settings&subview=settings&id=' . $form['id'] ) ); ?>"
-										class="link">Settings</a>
-									<!--Dropdown menu styling-->
-									<ul class="dropdown-menu"
-									    style="display: none; list-style: none; margin: 0; padding: 5px 0; background: #fff; border: 1px solid #ddd; position: absolute; top: 20px; left: 0; z-index: 1000; width: 200px; box-shadow: 0 1px 6px rgba(0, 0, 0, 0.1);">
+                                    </ul>
+                                </div>
+                                |
+                                <div class="dropdown" style="display: inline-block; position: relative;">
+                                    <a href="<?php echo esc_url( admin_url( 'admin.php?page=gf_edit_forms&view=settings&subview=settings&id=' . $form['id'] ) ); ?>"
+                                        class="link">Settings</a>
+                                    <!--Dropdown menu styling-->
+                                    <ul class="dropdown-menu"
+                                        style="display: none; list-style: none; margin: 0; padding: 5px 0; background: #fff; border: 1px solid #ddd; position: absolute; top: 20px; left: 0; z-index: 1000; width: 200px; box-shadow: 0 1px 6px rgba(0, 0, 0, 0.1);">
 										<?php
 										foreach ( $settings_info as $setting ) {
 											?>
-											<li style="padding: 5px 10px;">
-												<a href="<?php echo esc_url( $setting['url'] ); ?>"
-													style="text-decoration: none; color: #0073aa; display: flex; align-items: center; gap: 5px;">
-													<span class="dashicons <?php echo esc_attr( $setting['icon'] ); ?>"></span>
+                                            <li style="padding: 5px 10px;">
+                                                <a href="<?php echo esc_url( $setting['url'] ); ?>"
+                                                    style="text-decoration: none; color: #0073aa; display: flex; align-items: center; gap: 5px;">
+                                                    <span class="dashicons <?php echo esc_attr( $setting['icon'] ); ?>"></span>
 													<?php echo esc_html( $setting['label'] ); ?>
-												</a>
-											</li>
+                                                </a>
+                                            </li>
 											<?php
 										}
 										?>
-									</ul>
-								</div>
-							</td>
-							<td>
-								<button class="remove-form"
-								        onclick="remove_form(<?php echo esc_attr( $form['id'] ) . ', \'' . esc_attr( $remove_form_nonce ) . '\''; ?>);">
-									Remove
-								</button>
-							</td>
-						</tr>
+                                    </ul>
+                                </div>
+                            </td>
+                            <td>
+                                <button class="remove-form"
+                                        onclick="remove_form(<?php echo esc_attr( $form['id'] ) . ', \'' . esc_attr( $remove_form_nonce ) . '\''; ?>);">
+                                    Remove
+                                </button>
+                            </td>
+                        </tr>
 						<?php
 					}
 				}
@@ -448,20 +465,20 @@ class Form_Folders extends GFAddOn {
 				}
 				$rename_folder_nonce = wp_create_nonce( 'rename_folder' );
 				?>
-				</tbody>
-			</table>
-			<br><br>
+                </tbody>
+            </table>
+            <br><br>
 
-			<!--<h2>Rename Folder</h2>-->
-			<form id="rename-folder-form">
-				<label for="folder_name" style="font-size: 1.5em; font-weight: bold; margin-bottom: 0.5em; display: inline-block;">Rename Folder</label><br>
-				<input type="text" id="folder_name" name="folder_name" placeholder="Folder Name" required>
-				<input type="hidden" id="folder_id" name="folder_id" value="<?php echo esc_attr( $folder_id ); ?>">
-				<input type="hidden" name="nonce" value="<?php echo esc_attr( $rename_folder_nonce ); ?>">
-				<button type="submit">Rename Folder</button>
-			</form>
+            <!--<h2>Rename Folder</h2>-->
+            <form id="rename-folder-form">
+                <label for="folder_name" style="font-size: 1.5em; font-weight: bold; margin-bottom: 0.5em; display: inline-block;">Rename Folder</label><br>
+                <input type="text" id="folder_name" name="folder_name" placeholder="Folder Name" required>
+                <input type="hidden" id="folder_id" name="folder_id" value="<?php echo esc_attr( $folder_id ); ?>">
+                <input type="hidden" name="nonce" value="<?php echo esc_attr( $rename_folder_nonce ); ?>">
+                <button type="submit">Rename Folder</button>
+            </form>
 
-			<script>
+            <script>
                 document.addEventListener('DOMContentLoaded', function () {
                     // Enable hover functionality
                     document.querySelectorAll('.dropdown').forEach(function (dropdown) {
@@ -523,15 +540,20 @@ class Form_Folders extends GFAddOn {
                         });
                     });
                 });
-			</script>
+            </script>
 
 			<?php
 			echo '</div>';
-
-			return;
 		}
+	}
 
-		?>
+    /**
+     * Renders the main "Form Folders" page.
+     *
+     * @return void
+     */
+	private function render_form_folders_page() {
+        ?>
 		<div class="wrap">
 			<h1>Form Folders</h1>
 			<br>
@@ -540,6 +562,7 @@ class Form_Folders extends GFAddOn {
 
 				$create_folder_nonce = wp_create_nonce( 'create_folder' );
 				$assign_form_nonce   = wp_create_nonce( 'assign_form' );
+                $view_folder_nonce   = wp_create_nonce( 'view_folder' );
 				$folders             = get_terms(
 					[
 						'taxonomy'   => 'gf_form_folders',
@@ -550,7 +573,7 @@ class Form_Folders extends GFAddOn {
 				foreach ( $folders as $folder ) {
 					$form_count = count( get_objects_in_term( $folder->term_id, 'gf_form_folders' ) );
 					echo '<li style="font-size: 3em;">
-				<a href="' . esc_url( admin_url( 'admin.php?page=gf-form-folders&folder_id=' . $folder->term_id ) ) . '">
+				<a href="' . esc_url( admin_url( 'admin.php?page=gf-form-folders&folder_id=' . $folder->term_id . '&view_folder_nonce=' . $view_folder_nonce ) ) . '">
 				<span class="dashicons dashicons-category" style="margin-right: 5px;"></span> ' . esc_html( $folder->name ) . ' (' . esc_html( $form_count ) . ')
 				</a>';
 					if ( ! $form_count ) {
