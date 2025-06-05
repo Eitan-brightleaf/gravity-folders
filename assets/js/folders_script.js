@@ -42,13 +42,35 @@ jQuery(($) => {
 		});
 	});
 
-	$('.remove-form').on('click', function () {
+	$('#assign-forms-form').on('submit', function (e) {
+		e.preventDefault();
+
+		const folderID = $(this).find('[name="folder_id"]').val();
+		const formIDs = $(this).find('[name="form_ids[]"]').val();
+		const nonce = $(this).find('[name="nonce"]').val();
+
+		makeAjaxRequest({
+			action: 'assign_forms_to_folder',
+			formIDs,
+			folderID,
+			nonce,
+		});
+	});
+
+	$('.update-form').on('click', function () {
+		const action = $(this).data('action');
 		const formID = $(this).data('form-id');
 		const nonce = $(this).data('nonce');
+
+		const urlParams = new URLSearchParams(window.location.search);
+		const folderID = urlParams.get('folder_id'); // could be null
+
+
 		makeAjaxRequest({
-			action: 'remove_form_from_folder',
+			action,
 			formID,
 			nonce,
+			folderID,
 		});
 	});
 
@@ -65,5 +87,4 @@ jQuery(($) => {
 				console.error('Clipboard copy failed:', err);
 			});
 	});
-
 });

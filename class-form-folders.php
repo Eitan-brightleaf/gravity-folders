@@ -98,10 +98,12 @@ class Form_Folders extends GFAddOn {
 		$this->register_form_folders_taxonomy();
 
 		add_action( 'wp_ajax_create_folder', [ $this, 'handle_create_folder' ] );
-		add_action( 'wp_ajax_assign_form_to_folder', [ $this, 'handle_assign_form_to_folder' ] );
+		add_action( 'wp_ajax_assign_forms_to_folder', [ $this, 'handle_assign_form_to_folder' ] );
 		add_action( 'wp_ajax_remove_form_from_folder', [ $this, 'handle_remove_form_from_folder' ] );
 		add_action( 'wp_ajax_rename_folder', [ $this, 'handle_folder_renaming' ] );
 		add_action( 'wp_ajax_delete_folder', [ $this, 'handle_folder_deletion' ] );
+        add_action( 'wp_ajax_duplicate_form', [ $this, 'handle_duplicate_form' ] );
+        add_action( 'wp_ajax_trash_form', [ $this, 'handle_trash_form' ] );
 	}
 
 	/**
@@ -207,19 +209,20 @@ class Form_Folders extends GFAddOn {
 			wp_die();
 		}
 
-		if ( empty( $_POST['form_id'] ) || empty( $_POST['folder_id'] ) ) {
+		if ( empty( $_POST['formIDs'] ) || empty( $_POST['folderID'] ) ) {
 			wp_send_json_error( [ 'message' => 'Form and Folder are required' ] );
 			wp_die();
 		}
 
-		$form_id   = absint( $_POST['form_id'] );
-		$folder_id = absint( $_POST['folder_id'] );
+		$form_ids  = array_map( 'absint', (array) $_POST['formIDs'] );
+		$folder_id = absint( $_POST['folderID'] );
 
-		$result = wp_set_object_terms( $form_id, [ $folder_id ], 'gf_form_folders' );
-
-		if ( is_wp_error( $result ) ) {
-			wp_send_json_error( [ 'message' => $result->get_error_message() ] );
-			wp_die();
+		foreach ( $form_ids as $form_id ) {
+            $result = wp_set_object_terms( $form_id, [ $folder_id ], 'gf_form_folders' );
+			if ( is_wp_error( $result ) ) {
+				wp_send_json_error( [ 'message' => $result->get_error_message() ] );
+				wp_die();
+			}
 		}
 
 		wp_send_json_success( [ 'message' => 'Form assigned successfully!' ] );
@@ -326,6 +329,72 @@ class Form_Folders extends GFAddOn {
 			wp_send_json_success( [ 'message' => 'Folder deleted successfully.' ] );
 		}
 	}
+
+    /**
+     * Duplicates a form via an AJAX request.
+
+     * @return void
+     */
+    public function handle_duplicate_form() {
+
+        if ( ! isset( $_POST['nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['nonce'] ) ), 'duplicate_form' ) ) {
+            wp_send_json_error( [ 'message' => 'Invalid nonce. Request rejected.' ], 403 );
+            wp_die();
+        }
+
+        if ( empty( $_POST['formID'] ) ) {
+            wp_send_json_error( [ 'message' => 'Missing required parameters.' ], 400 );
+        }
+
+        $form_id   = absint( $_POST['formID'] );
+        $folder_id = absint( $_POST['folderID'] ) ?? null; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotValidated
+        $result    = GFAPI::duplicate_form( $form_id );
+        if ( ! is_wp_error( $result ) ) {
+            if ( $folder_id ) {
+                wp_set_object_terms( $result, [ $folder_id ], 'gf_form_folders' );
+            }
+            wp_send_json_success( [ 'message' => 'Form duplicated successfully.' ] );
+        } else {
+            wp_send_json_error( [ 'message' => 'Failed to duplicate the form. Please try again.' ], 403 );
+            wp_die();
+        }
+    }
+
+
+    /**
+     * Trashes a form via an AJAX request.
+     *
+     * @return void
+     */
+    public function handle_trash_form() {
+
+        if ( ! isset( $_POST['nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['nonce'] ) ), 'trash_form' ) ) {
+            wp_send_json_error( [ 'message' => 'Invalid nonce. Request rejected.' ], 403 );
+            wp_die();
+        }
+
+        if ( empty( $_POST['formID'] ) ) {
+            wp_send_json_error( [ 'message' => 'Missing required parameters.' ], 400 );
+        }
+
+        $form_id = absint( $_POST['formID'] );
+        if ( ! is_wp_error( GFFormsModel::trash_form( $form_id ) ) ) {
+
+            $result = wp_set_object_terms( $form_id, [], 'gf_form_folders' );
+
+			if ( is_wp_error( $result ) ) {
+				GFFormsModel::restore_form( $form_id );
+                wp_send_json_error( [ 'message' => 'Encountered an error removing the form from the folder.' ], 403 );
+                wp_die();
+
+			}
+
+            wp_send_json_success( [ 'message' => 'Form trashed successfully.' ] );
+
+        } else {
+            wp_send_json_error( [ 'message' => 'Failed to trash the form. Please try again.' ], 403 );
+        }
+    }
 
 	/**
 	 * Loads stylesheets for the plugin
@@ -464,7 +533,10 @@ class Form_Folders extends GFAddOn {
 						$post_html             = wp_kses_allowed_html( 'post' );
 						$combined_allowed_html = array_merge_recursive( $post_html, $allowed_svg_tags );
 						$remove_form_nonce     = wp_create_nonce( 'remove_form' );
+                        $duplicate_form_nonce  = wp_create_nonce( 'duplicate_form' );
+                        $trash_form_nonce      = wp_create_nonce( 'trash_form' );
                         $rename_folder_nonce   = wp_create_nonce( 'rename_folder' );
+                        $assign_form_nonce     = wp_create_nonce( 'assign_form' );
 
 						foreach ( $forms as $form ) {
 							$form_terms = wp_get_object_terms( $form['id'], 'gf_form_folders', [ 'fields' => 'ids' ] );
@@ -488,11 +560,7 @@ class Form_Folders extends GFAddOn {
 									<!--Links-->
 									<?php $this->render_links_td_section( $form, $allowed_svg_tags, $combined_allowed_html ); ?>
 									<!--Buttons-->
-									<td>
-										<button type="button" class="remove-form" data-form-id="<?php echo esc_attr( $form['id'] ); ?>" data-nonce="<?php echo esc_attr( $remove_form_nonce ); ?>">
-											Remove
-										</button>
-									</td>
+									<?php $this->render_buttons_td_section( $form, $remove_form_nonce, $duplicate_form_nonce, $trash_form_nonce ); ?>
 								</tr>
 								<?php
 							}
@@ -508,11 +576,31 @@ class Form_Folders extends GFAddOn {
 
 				<!--<h2>Rename Folder</h2>-->
 				<form id="rename-folder-form">
-					<label for="folder_name" style="font-size: 1.5em; font-weight: bold; margin-bottom: 0.5em; display: inline-block;">Rename Folder</label><br>
+					<label for="folder_name" class="form-field-label">Rename Folder</label><br>
 					<input type="text" id="folder_name" name="folder_name" placeholder="Folder Name" required>
 					<input type="hidden" id="folder_id" name="folder_id" value="<?php echo esc_attr( $folder_id ); ?>">
 					<input type="hidden" name="nonce" value="<?php echo esc_attr( $rename_folder_nonce ); ?>">
-					<button type="submit">Rename Folder</button>
+					<button type="submit" class="button">Rename Folder</button>
+				</form>
+
+                <br><br>
+
+				<form id="assign-forms-form">
+					<label for="form_ids" class="form-field-label">Assign Forms to Folder</label><br>
+					<select id="form_ids" name="form_ids[]" required multiple size="8">
+						<?php
+						$all_forms = GFAPI::get_forms();
+						foreach ( $all_forms as $form ) {
+							$assigned_folders = wp_get_object_terms( $form['id'], 'gf_form_folders', [ 'fields' => 'ids' ] );
+							if ( empty( $assigned_folders ) ) {
+								echo '<option value="' . esc_attr( $form['id'] ) . '">' . esc_html( $form['title'] ) . '</option>';
+							}
+						}
+						?>
+					</select>
+					<input type="hidden" id="folder_id" name="folder_id" value="<?php echo esc_attr( $folder_id ); ?>">
+					<input type="hidden" name="nonce" value="<?php echo esc_attr( $assign_form_nonce ); ?>"> <br>
+					<button type="submit" class="button">Assign Forms</button>
 				</form>
 
 			<?php
@@ -535,14 +623,10 @@ class Form_Folders extends GFAddOn {
 			<td>
 				<!--Edit Form-->
 				<a href="<?php echo esc_url( $edit_form_link ); ?>">Edit</a> |
-				<!--Duplicate Form-->
-				<a href="#" onclick="DuplicateForm(<?php echo esc_attr( $form['id'] ); ?>);return false;">Duplicate</a> | <!--FIXME: Duplicate Form-->
 				<!--Entries + Dropdown-->
 				<?php $this->render_entries_dropdown( $form ); ?>
 				<!--Settings + Dropdown-->
 				<?php $this->render_settings_dropdown( $form, $allowed_svg_tags, $combined_allowed_html ); ?>
-				<!--Delete Form-->
-				<a href="#" class="trash" onclick="DeleteForm(<?php echo esc_attr( $form['id'] ); ?>);return false;">Trash</a> <!--FIXME: Delete Form-->
 			</td>
 		<?php
 	}
@@ -707,7 +791,7 @@ class Form_Folders extends GFAddOn {
      *
      * @return void
      */
-	private function render_settings_dropdown( array $form, array $allowed_svg_tags, array $combined_allowed_html ) {
+	private function render_settings_dropdown( $form, $allowed_svg_tags, $combined_allowed_html ) {
         $form_settings_link = admin_url( 'admin.php?page=gf_edit_forms&view=settings&subview=settings&id=' . $form['id'] );
 
 		$settings_info = GFForms::get_form_settings_sub_menu_items( $form['id'] );
@@ -744,7 +828,32 @@ class Form_Folders extends GFAddOn {
 					}
 					?>
 				</ul>
-			</div> |
+			</div>
 		<?php
+	}
+    /**
+     * Renders the "Buttons" section of the table for a specific form in the folder.
+
+     * @param array  $form The current form.
+     * @param string $remove_form_nonce The nonce for removing the form.
+     * @param string $duplicate_form_nonce The nonce for duplicating the form.
+     * @param string $trash_form_nonce The nonce for trashing the form.
+     *
+     * @return void
+     */
+    private function render_buttons_td_section( $form, $remove_form_nonce, $duplicate_form_nonce, $trash_form_nonce ) {
+        ?>
+                <td>
+                    <button type="button" class="update-form button" data-action="remove_form_from_folder" data-form-id="<?php echo esc_attr( $form['id'] ); ?>" data-nonce="<?php echo esc_attr( $remove_form_nonce ); ?>">
+                        Remove
+                    </button>
+                    <button type="button" class="update-form button" data-action="duplicate_form" data-form-id="<?php echo esc_attr( $form['id'] ); ?>" data-nonce="<?php echo esc_attr( $duplicate_form_nonce ); ?>">
+                        Duplicate
+                    </button>
+                    <button type="button" class="update-form button" data-action="trash_form" data-form-id="<?php echo esc_attr( $form['id'] ); ?>" data-nonce="<?php echo esc_attr( $trash_form_nonce ); ?>">
+                        Trash
+                    </button>
+                </td>
+                <?php
 	}
 }

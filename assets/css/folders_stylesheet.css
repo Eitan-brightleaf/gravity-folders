@@ -37,15 +37,11 @@
 }
 
 
-a.trash:hover,
-a.trash:focus,
-a.trash:active {
-    color: #b32d2e;
-    text-decoration: underline;
-}
-
-.trash {
-    color: #b32d2e;
+.form-field-label {
+    font-size: 1.5em;
+    font-weight: bold;
+    margin-bottom: 0.5em;
+    display: inline-block;
 }
 
 li {
