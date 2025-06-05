@@ -8,32 +8,44 @@
 }
 
 .dropdown-menu{
-    display: none; 
-    list-style: none; 
-    margin: 0; 
-    padding: 5px 0; 
-    background: #fff; 
-    border: 1px solid #ddd; 
-    position: absolute; 
-    top: 20px; 
-    left: 0; 
-    z-index: 1000; 
-    width: 200px; 
+    display: none;
+    list-style: none;
+    margin: 0;
+    padding: 5px 0;
+    background: #fff;
+    border: 1px solid #ddd;
+    position: absolute;
+    top: 20px;
+    left: 0;
+    z-index: 1000;
+    width: 200px;
     box-shadow: 0 1px 6px rgba(0, 0, 0, 0.1);
 }
 
 .settings-item {
-    text-decoration: none; 
-    color: #0073aa; 
-    display: flex; 
-    align-items: center; 
+    text-decoration: none;
+    color: #0073aa;
+    display: flex;
+    align-items: center;
     gap: 5px;
 }
 
 .settings-icon {
-    width: 20px; 
-    height: auto; 
+    width: 20px;
+    height: auto;
     vertical-align: middle;
+}
+
+
+a.trash:hover,
+a.trash:focus,
+a.trash:active {
+    color: #b32d2e;
+    text-decoration: underline;
+}
+
+.trash {
+    color: #b32d2e;
 }
 
 li {

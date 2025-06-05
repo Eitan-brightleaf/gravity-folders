@@ -12,6 +12,8 @@ GFForms::include_addon_framework();
  * This class extends the GFAddOn and is responsible for handling the Form Folders for Gravity Forms plugin.
  */
 class Form_Folders extends GFAddOn {
+
+
 	// phpcs:disable PSR2.Classes.PropertyDeclaration.Underscore
 	/**
 	 * The current version of the plugin
@@ -88,7 +90,7 @@ class Form_Folders extends GFAddOn {
 
 	/**
 	 * Initializes the class by adding necessary filters.
-     *
+	 *
 	 * @return void
 	 */
 	public function init() {
@@ -325,13 +327,13 @@ class Form_Folders extends GFAddOn {
 		}
 	}
 
-    /**
-     * Loads stylesheets for the plugin
-     *
-     * @return array
-     */
-    public function styles() {
-        $styles = [
+	/**
+	 * Loads stylesheets for the plugin
+	 *
+	 * @return array
+	 */
+	public function styles() {
+		$styles = [
 			[
 				'handle'  => 'form-folders-styles',
 				'src'     => plugins_url( 'assets/css/folders_stylesheet.css', $this->_full_path ),
@@ -341,8 +343,8 @@ class Form_Folders extends GFAddOn {
 				],
 			],
 		];
-        return array_merge( parent::styles(), $styles );
-    }
+		return array_merge( parent::styles(), $styles );
+	}
 
 	/**
 	 * Renders the Form Folders admin page for the Gravity Forms plugin.
@@ -358,23 +360,25 @@ class Form_Folders extends GFAddOn {
 			wp_die( 'You do not have sufficient permissions to access this page.' );
 		}
 
-        if ( rgget( 'folder_id' ) ) {
-            $this->render_single_folder_page();
-        } else {
-            $this->render_form_folders_page();
-        }
+        wp_enqueue_style( 'wp-admin-common', admin_url( 'load-styles.php?c=1&dir=ltr&load=common' ) ); // phpcs:ignore WordPress.WP.EnqueuedResourceParameters.MissingVersion
+
+		if ( rgget( 'folder_id' ) ) {
+			$this->render_single_folder_page();
+		} else {
+			$this->render_form_folders_page();
+		}
 	}
 
 	/**
-     * Renders a single folder page with its assigned forms.
-     *
+	 * Renders a single folder page with its assigned forms.
+	 *
 	 * @return void
 	 */
-    private function render_single_folder_page() {
+	private function render_single_folder_page() {
 
-        if ( ! isset( $_GET['view_folder_nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_GET['view_folder_nonce'] ) ), 'view_folder' ) ) {
-            wp_die( 'You do not have sufficient permissions to access this page.' );
-        }
+		if ( ! isset( $_GET['view_folder_nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_GET['view_folder_nonce'] ) ), 'view_folder' ) ) {
+			wp_die( 'You do not have sufficient permissions to access this page.' );
+		}
 		$folder_id = isset( $_GET['folder_id'] ) ? absint( $_GET['folder_id'] ) : 0;
 
 		if ( $folder_id ) {
@@ -385,350 +389,402 @@ class Form_Folders extends GFAddOn {
 			}
 			?>
 
-            <div class="wrap">
-            <h1>Forms in Folder: <?php echo esc_html( $folder->name ); ?> </h1>
-            <!--Back button-->
-            <br>
-            <a href="<?php echo esc_url( admin_url( 'admin.php?page=gf-form-folders' ) ); ?>" class="button">
-                Back to All Folders
-            </a>
-            <br><br>
+			<div class="wrap">
+				<h1>Forms in Folder: <?php echo esc_html( $folder->name ); ?> </h1>
+				<!--Back button-->
+				<br>
+				<a href="<?php echo esc_url( admin_url( 'admin.php?page=gf-form-folders' ) ); ?>" class="button">
+					Back to All Folders
+				</a>
+				<br><br>
 
-            <!--Forms Table-->
-            <table class="wp-list-table widefat fixed striped">
-                <thead>
-                <tr>
-                    <th>Form Name</th>
-                    <th>Shortcode</th>
-                    <th>Settings</th>
-                    <th>Actions</th>
-                </tr>
-                </thead>
-                <tbody>
+				<!--Forms Table-->
+				<table class="wp-list-table widefat fixed striped">
+					<thead>
+						<tr>
+							<th>Form Name</th>
+							<th>Shortcode</th>
+							<th>Settings</th>
+							<th>Actions</th>
+						</tr>
+					</thead>
+					<tbody>
 
-				<?php
-				$forms                 = GFAPI::get_forms();
-				$found                 = false;
-                $allowed_svg_tags      = [
-					'svg'  => [
-						'xmlns'             => true,
-						'viewbox'           => true,
-						'width'             => true,
-						'height'            => true,
-						'style'             => true,
-						'class'             => true,
-						'enable-background' => true,
-					],
-					'g'    => [
-						'fill'            => true,
-						'stroke'          => true,
-						'stroke-linecap'  => true,
-						'stroke-linejoin' => true,
-						'stroke-width'    => true,
-					],
-					'path' => [
-						'd'         => true,
-						'fill'      => true,
-						'stroke'    => true,
-						'fill-rule' => true,
-					],
-				];
-                $post_html             = wp_kses_allowed_html( 'post' );
-                $combined_allowed_html = array_merge_recursive( $post_html, $allowed_svg_tags );
-
-				foreach ( $forms as $form ) {
-					$remove_form_nonce = wp_create_nonce( 'remove_form' );
-					$form_terms        = wp_get_object_terms( $form['id'], 'gf_form_folders', [ 'fields' => 'ids' ] );
-
-                    $edit_form_link      = admin_url( 'admin.php?page=gf_edit_forms&id=' . $form['id'] );
-					$entries_link        = admin_url( 'admin.php?page=gf_entries&view=entries&id=' . $form['id'] );
-					$export_entries_link = admin_url( 'admin.php?page=gf_export&view=export_entry&id=' . $form['id'] );
-					if ( in_array( 'gravityview-importer/gravityview-importer.php', get_option( 'active_plugins' ), true ) ) {
-						$import_entries_link = admin_url( 'admin.php?page=gv-admin-import-entries#targetForm=' . $form['id'] );
-					}
-					$form_settings_link = admin_url( 'admin.php?page=gf_edit_forms&view=settings&subview=settings&id=' . $form['id'] );
-
-					if ( in_array( $folder_id, $form_terms, true ) ) {
-						$found         = true;
-						$settings_info = GFForms::get_form_settings_sub_menu_items( $form['id'] );
-						?>
-                        <tr>
-                            <!--Form Title-->
-                            <td>
-                                <a href="<?php echo esc_url( $edit_form_link ); ?>"><?php echo esc_html( $form['title'] ); ?></a>
-                            </td>
-                            <td>
-                                <code class="copyable">
-                                    [gravityform id="<?php echo esc_attr( $form['id'] ); ?>" title="false" description="false"]
-                                </code>
-                            </td>
-                            <td>
-                                <a href="<?php echo esc_url( $edit_form_link ); ?>">Edit</a> |
-                                <a href="#" onclick="DuplicateForm(<?php echo esc_attr( $form['id'] ); ?>);return false;">Duplicate</a> | <!--FIXME: Duplicate Form-->
-                                <div class="dropdown">
-                                    <a href="<?php echo esc_url( $entries_link ); ?>" class="link">Entries</a>
-                                    <ul class="dropdown-menu">
-                                        <li>
-                                            <a href="<?php echo esc_url( $entries_link ); ?>">Entries</a>
-                                        </li>
-                                        <li>
-                                            <a href="<?php echo esc_url( $export_entries_link ); ?>"> Export Entries </a>
-                                        </li>
-										<?php
-										if ( isset( $import_entries_link ) ) {
-											?>
-                                            <li><a href="<?php echo esc_url( $import_entries_link ); ?>">Import Entries</a></li>
-											<?php
-										}
-										?>
-                                    </ul>
-                                </div> |
-                                <div class="dropdown">
-                                    <a href="<?php echo esc_url( $form_settings_link ); ?>"
-                                        class="link">Settings</a>
-                                    <ul class="dropdown-menu">
-										<?php
-										foreach ( $settings_info as $setting ) {
-											$icon_html   = $setting['icon'];
-											$icon_output = '';
-
-											if ( preg_match( '/<svg.*<\/svg>/is', $icon_html, $matches ) ) {
-												$icon_output = wp_kses( $matches[0], $allowed_svg_tags );
-											} elseif ( preg_match( '/<img[^>]+src=["\']([^"\']+)["\']/', $icon_html, $matches ) ) {
-												// Icon is an <img> tag
-												$icon_output = '<img src="' . esc_url( $matches[1] ) . '" alt="" class="settings-icon" />';
-											} elseif ( preg_match( '/class=["\']([^"\']+)["\']/', $icon_html, $matches ) ) {
-												// Icon is a class-based icon
-												$classes = explode( ' ', $matches[1] );
-                                                $classes = array_map( 'sanitize_html_class', $classes );
-                                                $classes = implode( ' ', $classes );
-
-												$icon_output = '<span class="dashicons ' . esc_attr( $classes ) . '"></span>';
-											}
-											?>
-                                            <li>
-                                                <a href="<?php echo esc_url( $setting['url'] ); ?>" class="settings-item">
-												    <?php echo wp_kses( $icon_output, $combined_allowed_html ); ?>
-												    <?php echo esc_html( $setting['label'] ); ?>
-                                                </a>
-                                            </li>
-												<?php
-										}
-										?>
-                                    </ul>
-                                </div>
-                            </td>
-                            <td>
-                                <button class="remove-form"
-                                        onclick="remove_form(<?php echo esc_attr( $form['id'] ) . ', \'' . esc_attr( $remove_form_nonce ) . '\''; ?>);">
-                                    Remove
-                                </button>
-                            </td>
-                        </tr>
 						<?php
-					}
-				}
+						$forms                 = GFAPI::get_forms();
+						$found                 = false;
+						$allowed_svg_tags      = [
+							'svg'  => [
+								'xmlns'             => true,
+								'viewbox'           => true,
+								'width'             => true,
+								'height'            => true,
+								'style'             => true,
+								'class'             => true,
+								'enable-background' => true,
+							],
+							'g'    => [
+								'fill'            => true,
+								'stroke'          => true,
+								'stroke-linecap'  => true,
+								'stroke-linejoin' => true,
+								'stroke-width'    => true,
+							],
+							'path' => [
+								'd'         => true,
+								'fill'      => true,
+								'stroke'    => true,
+								'fill-rule' => true,
+							],
+						];
+						$post_html             = wp_kses_allowed_html( 'post' );
+						$combined_allowed_html = array_merge_recursive( $post_html, $allowed_svg_tags );
+						$remove_form_nonce     = wp_create_nonce( 'remove_form' );
 
-				if ( ! $found ) {
-					echo '<tr><td colspan="4">No forms found in this folder.</td></tr>';
-				}
-				$rename_folder_nonce = wp_create_nonce( 'rename_folder' );
-				?>
-                </tbody>
-            </table>
-            <br><br>
+						foreach ( $forms as $form ) {
+							$form_terms = wp_get_object_terms( $form['id'], 'gf_form_folders', [ 'fields' => 'ids' ] );
 
-            <!--<h2>Rename Folder</h2>-->
-            <form id="rename-folder-form">
-                <label for="folder_name" style="font-size: 1.5em; font-weight: bold; margin-bottom: 0.5em; display: inline-block;">Rename Folder</label><br>
-                <input type="text" id="folder_name" name="folder_name" placeholder="Folder Name" required>
-                <input type="hidden" id="folder_id" name="folder_id" value="<?php echo esc_attr( $folder_id ); ?>">
-                <input type="hidden" name="nonce" value="<?php echo esc_attr( $rename_folder_nonce ); ?>">
-                <button type="submit">Rename Folder</button>
-            </form>
+							$edit_form_link = admin_url( 'admin.php?page=gf_edit_forms&id=' . $form['id'] );
 
-            <script>
-                document.addEventListener('DOMContentLoaded', function () {
-                    // Enable hover functionality
-                    document.querySelectorAll('.dropdown').forEach(function (dropdown) {
-                        const link = dropdown.querySelector('.link');
-                        const menu = dropdown.querySelector('.dropdown-menu');
+							if ( in_array( $folder_id, $form_terms, true ) ) {
+								$found = true;
+								?>
+								<tr>
+									<!--Form Title-->
+									<td>
+										<a href="<?php echo esc_url( $edit_form_link ); ?>"><?php echo esc_html( $form['title'] ); ?></a>
+									</td>
+									<!--Shortcode-->
+									<td>
+										<code class="copyable">
+											[gravityform id="<?php echo esc_attr( $form['id'] ); ?>" title="false" description="false"]
+										</code>
+									</td>
+									<!--Links-->
+									<?php $this->render_links_td_section( $form, $allowed_svg_tags, $combined_allowed_html ); ?>
+									<!--Buttons-->
+									<td>
+										<button class="remove-form" onclick="remove_form(<?php echo esc_attr( $form['id'] ) . ', \'' . esc_attr( $remove_form_nonce ) . '\''; ?>);">
+											Remove
+										</button>
+									</td>
+								</tr>
+								<?php
+							}
+						}
 
-                        // Show dropdown on hover
-                        link.addEventListener('mouseover', function () {
-                            menu.style.display = 'block';
-                        });
+						if ( ! $found ) {
+							echo '<tr><td colspan="4">No forms found in this folder.</td></tr>';
+						}
+						$rename_folder_nonce = wp_create_nonce( 'rename_folder' );
+						?>
+					</tbody>
+				</table>
+				<br><br>
 
-                        menu.addEventListener('mouseover', function () {
-                            menu.style.display = 'block';
-                        });
+				<!--<h2>Rename Folder</h2>-->
+				<form id="rename-folder-form">
+					<label for="folder_name" style="font-size: 1.5em; font-weight: bold; margin-bottom: 0.5em; display: inline-block;">Rename Folder</label><br>
+					<input type="text" id="folder_name" name="folder_name" placeholder="Folder Name" required>
+					<input type="hidden" id="folder_id" name="folder_id" value="<?php echo esc_attr( $folder_id ); ?>">
+					<input type="hidden" name="nonce" value="<?php echo esc_attr( $rename_folder_nonce ); ?>">
+					<button type="submit">Rename Folder</button>
+				</form>
 
-                        // Hide dropdown when the mouse leaves
-                        dropdown.addEventListener('mouseleave', function () {
-                            menu.style.display = 'none';
-                        });
-                    });
+				<script>
+					document.addEventListener('DOMContentLoaded', function() {
+						// Enable hover functionality
+						document.querySelectorAll('.dropdown').forEach(function(dropdown) {
+							const link = dropdown.querySelector('.link');
+							const menu = dropdown.querySelector('.dropdown-menu');
 
-                    function handleFormSubmission(formId, action) {
-                        document.getElementById(formId).addEventListener('submit', function (e) {
-                            e.preventDefault();
+							// Show dropdown on hover
+							link.addEventListener('mouseover', function() {
+								menu.style.display = 'block';
+							});
 
-                            let formData = new FormData(this);
-                            formData.append('action', action);
+							menu.addEventListener('mouseover', function() {
+								menu.style.display = 'block';
+							});
 
-                            fetch(ajaxurl, {
-                                method: 'POST',
-                                body: formData
-                            })
-                                .then(response => response.json())
-                                .then(() => location.reload());
-                        });
-                    };
-                    handleFormSubmission('rename-folder-form', 'rename_folder');
-                    remove_form = function (formID, nonce) {
-                        const body = `action=remove_form_from_folder&form_id=${encodeURIComponent(formID)}&nonce=${encodeURIComponent(nonce)}`;
+							// Hide dropdown when the mouse leaves
+							dropdown.addEventListener('mouseleave', function() {
+								menu.style.display = 'none';
+							});
+						});
 
-                        fetch(ajaxurl, {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/x-www-form-urlencoded', // Specify the correct content type
-                            },
-                            body,
-                        })
-                            .then(response => response.json())
-                            .then(() => location.reload())
-                            .catch(error => console.error('Error:', error));
-                    };
-                    document.querySelectorAll(".copyable").forEach(function (element) {
-                        element.addEventListener("click", function () {
-                            navigator.clipboard.writeText(element.innerHTML);
-                            element.style.backgroundColor = "#d4edda"; // Light green to indicate success
-                            setTimeout(() => {
-                                element.style.backgroundColor = ""; // Revert after a short delay
-                            }, 1000);
-                        });
-                    });
-                });
-            </script>
+						function handleFormSubmission(formId, action) {
+							document.getElementById(formId).addEventListener('submit', function(e) {
+								e.preventDefault();
+
+								let formData = new FormData(this);
+								formData.append('action', action);
+
+								fetch(ajaxurl, {
+										method: 'POST',
+										body: formData
+									})
+									.then(response => response.json())
+									.then(() => location.reload());
+							});
+						};
+						handleFormSubmission('rename-folder-form', 'rename_folder');
+						remove_form = function(formID, nonce) {
+							const body = `action=remove_form_from_folder&form_id=${encodeURIComponent(formID)}&nonce=${encodeURIComponent(nonce)}`;
+
+							fetch(ajaxurl, {
+									method: 'POST',
+									headers: {
+										'Content-Type': 'application/x-www-form-urlencoded', // Specify the correct content type
+									},
+									body,
+								})
+								.then(response => response.json())
+								.then(() => location.reload())
+								.catch(error => console.error('Error:', error));
+						};
+						document.querySelectorAll(".copyable").forEach(function(element) {
+							element.addEventListener("click", function() {
+								navigator.clipboard.writeText(element.innerHTML);
+								element.style.backgroundColor = "#d4edda"; // Light green to indicate success
+								setTimeout(() => {
+									element.style.backgroundColor = ""; // Revert after a short delay
+								}, 1000);
+							});
+						});
+					});
+				</script>
 
 			<?php
 			echo '</div>';
 		}
 	}
 
-    /**
-     * Renders the main "Form Folders" page.
-     *
-     * @return void
-     */
+	/**
+	 * Renders the "Links" section of the table for a specific form in the folder.
+	 *
+	 * @param array $form The current form.
+	 * @param array $allowed_svg_tags A list of allowed SVG tags.
+	 * @param array $combined_allowed_html A list of allowed HTML tags.
+	 *
+	 * @return void
+	 */
+	private function render_links_td_section( $form, $allowed_svg_tags, $combined_allowed_html ) {
+		$edit_form_link = admin_url( 'admin.php?page=gf_edit_forms&id=' . $form['id'] );
+		?>
+			<td>
+				<!--Edit Form-->
+				<a href="<?php echo esc_url( $edit_form_link ); ?>">Edit</a> |
+				<!--Duplicate Form-->
+				<a href="#" onclick="DuplicateForm(<?php echo esc_attr( $form['id'] ); ?>);return false;">Duplicate</a> | <!--FIXME: Duplicate Form-->
+				<!--Entries + Dropdown-->
+				<?php $this->render_entries_dropdown( $form ); ?>
+				<!--Settings + Dropdown-->
+				<?php $this->render_settings_dropdown( $form, $allowed_svg_tags, $combined_allowed_html ); ?>
+				<!--Delete Form-->
+				<a href="#" class="trash" onclick="DeleteForm(<?php echo esc_attr( $form['id'] ); ?>);return false;">Trash</a>
+			</td>
+		<?php
+	}
+
+	/**
+	 * Renders the main "Form Folders" page.
+	 *
+	 * @return void
+	 */
 	private function render_form_folders_page() {
-        ?>
-		<div class="wrap">
-			<h1>Form Folders</h1>
-			<br>
-			<ul>
-				<?php
+		?>
+			<div class="wrap">
+				<h1>Form Folders</h1>
+				<br>
+				<ul>
+					<?php
 
-				$create_folder_nonce = wp_create_nonce( 'create_folder' );
-				$assign_form_nonce   = wp_create_nonce( 'assign_form' );
-                $view_folder_nonce   = wp_create_nonce( 'view_folder' );
-				$folders             = get_terms(
-					[
-						'taxonomy'   => 'gf_form_folders',
-						'hide_empty' => false,
-					]
-				);
+					$create_folder_nonce = wp_create_nonce( 'create_folder' );
+					$assign_form_nonce   = wp_create_nonce( 'assign_form' );
+					$view_folder_nonce   = wp_create_nonce( 'view_folder' );
+					$folders             = get_terms(
+						[
+							'taxonomy'   => 'gf_form_folders',
+							'hide_empty' => false,
+						]
+					);
 
-				foreach ( $folders as $folder ) {
-					$form_count = count( get_objects_in_term( $folder->term_id, 'gf_form_folders' ) );
-					echo '<li style="font-size: 3em;">
+					foreach ( $folders as $folder ) {
+						$form_count = count( get_objects_in_term( $folder->term_id, 'gf_form_folders' ) );
+						echo '<li style="font-size: 3em;">
 				<a href="' . esc_url( admin_url( 'admin.php?page=gf-form-folders&folder_id=' . $folder->term_id . '&view_folder_nonce=' . $view_folder_nonce ) ) . '">
 				<span class="dashicons dashicons-category" style="margin-right: 5px;"></span> ' . esc_html( $folder->name ) . ' (' . esc_html( $form_count ) . ')
 				</a>';
-					if ( ! $form_count ) {
-						$delete_folder_nonce = wp_create_nonce( 'delete_folder' );
-						echo '&nbsp;&nbsp;<button class="button" onclick="delete_folder(' . esc_attr( $folder->term_id ) . ', \'' . esc_attr( $delete_folder_nonce ) . '\')">Delete Folder</button>';
+						if ( ! $form_count ) {
+							$delete_folder_nonce = wp_create_nonce( 'delete_folder' );
+							echo '&nbsp;&nbsp;<button class="button" onclick="delete_folder(' . esc_attr( $folder->term_id ) . ', \'' . esc_attr( $delete_folder_nonce ) . '\')">Delete Folder</button>';
+						}
+						echo '</li>';
+						echo '<br><br>';
 					}
-					echo '</li>';
-					echo '<br><br>';
-				}
-				?>
-			</ul>
+					?>
+				</ul>
 
-			<div style="display: flex; gap: 20px; align-items: flex-start; justify-content: flex-start; max-width: 800px;">
-				<div style="flex: 1;">
-					<h2>Create a New Folder</h2>
-					<form id="create-folder-form">
-						<input type="text" id="folder_name" name="folder_name" placeholder="Folder Name" required>
-						<input type="hidden" name="nonce" value="<?php echo esc_attr( $create_folder_nonce ); ?>">
-						<button type="submit">Create Folder</button>
-					</form>
-				</div>
+				<div style="display: flex; gap: 20px; align-items: flex-start; justify-content: flex-start; max-width: 800px;">
+					<div style="flex: 1;">
+						<h2>Create a New Folder</h2>
+						<form id="create-folder-form">
+							<input type="text" id="folder_name" name="folder_name" placeholder="Folder Name" required>
+							<input type="hidden" name="nonce" value="<?php echo esc_attr( $create_folder_nonce ); ?>">
+							<button type="submit">Create Folder</button>
+						</form>
+					</div>
 
-				<div style="flex: 1;">
-					<h2>Assign a Form to a Folder</h2>
-					<form id="assign-form-form">
-						<select id="form_id" name="form_id" required>
-							<option value="">Select an Unassigned Form</option>
-							<?php
-							$all_forms = GFAPI::get_forms();
-							foreach ( $all_forms as $form ) {
-								$assigned_folders = wp_get_object_terms( $form['id'], 'gf_form_folders', [ 'fields' => 'ids' ] );
-								if ( empty( $assigned_folders ) ) {
-									echo '<option value="' . esc_attr( $form['id'] ) . '">' . esc_html( $form['title'] ) . '</option>';
+					<div style="flex: 1;">
+						<h2>Assign a Form to a Folder</h2>
+						<form id="assign-form-form">
+							<select id="form_id" name="form_id" required>
+								<option value="">Select an Unassigned Form</option>
+								<?php
+								$all_forms = GFAPI::get_forms();
+								foreach ( $all_forms as $form ) {
+									$assigned_folders = wp_get_object_terms( $form['id'], 'gf_form_folders', [ 'fields' => 'ids' ] );
+									if ( empty( $assigned_folders ) ) {
+										echo '<option value="' . esc_attr( $form['id'] ) . '">' . esc_html( $form['title'] ) . '</option>';
+									}
 								}
-							}
-							?>
-						</select>
-						<select id="folder_id" name="folder_id" required>
-							<option value="">Select a Folder</option>
-							<?php
-							foreach ( $folders as $folder ) {
-								echo '<option value="' . esc_attr( $folder->term_id ) . '">' . esc_html( $folder->name ) . '</option>';
-							}
-							?>
-						</select>
-						<input type="hidden" name="nonce" value="<?php echo esc_attr( $assign_form_nonce ); ?>">
-						<button type="submit">Assign Form</button>
-					</form>
+								?>
+							</select>
+							<select id="folder_id" name="folder_id" required>
+								<option value="">Select a Folder</option>
+								<?php
+								foreach ( $folders as $folder ) {
+									echo '<option value="' . esc_attr( $folder->term_id ) . '">' . esc_html( $folder->name ) . '</option>';
+								}
+								?>
+							</select>
+							<input type="hidden" name="nonce" value="<?php echo esc_attr( $assign_form_nonce ); ?>">
+							<button type="submit">Assign Form</button>
+						</form>
+					</div>
 				</div>
+				<script>
+					document.addEventListener('DOMContentLoaded', function() {
+						delete_folder = function(folder_id, nonce) {
+							const body = `action=delete_folder&folder_id=${encodeURIComponent(folder_id)}&nonce=${encodeURIComponent(nonce)}`;
+							fetch(ajaxurl, {
+									method: 'POST',
+									headers: {
+										'Content-Type': 'application/x-www-form-urlencoded', // Specify the correct content type
+									},
+									body,
+								})
+								.then(response => response.json())
+								.then(() => location.reload())
+								.catch(error => console.error('Error:', error));
+						}
+
+						function handleFormSubmission(formId, action) {
+							document.getElementById(formId).addEventListener('submit', function(e) {
+								e.preventDefault();
+
+								let formData = new FormData(this);
+								formData.append('action', action);
+
+								fetch(ajaxurl, {
+										method: 'POST',
+										body: formData
+									})
+									.then(response => response.json())
+									.then(() => location.reload());
+							});
+						}
+
+						handleFormSubmission('create-folder-form', 'create_folder');
+						handleFormSubmission('assign-form-form', 'assign_form_to_folder');
+					});
+				</script>
 			</div>
-			<script>
-                document.addEventListener('DOMContentLoaded', function () {
-                    delete_folder = function(folder_id, nonce) {
-                        const body = `action=delete_folder&folder_id=${encodeURIComponent(folder_id)}&nonce=${encodeURIComponent(nonce)}`;
-                        fetch(ajaxurl, {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/x-www-form-urlencoded', // Specify the correct content type
-                            },
-                            body,
-                        })
-                            .then(response => response.json())
-                            .then(() => location.reload())
-                            .catch(error => console.error('Error:', error));
-                    }
-                    function handleFormSubmission(formId, action) {
-                        document.getElementById(formId).addEventListener('submit', function (e) {
-                            e.preventDefault();
+		<?php
+	}
+	/**
+	 * Renders the "Entries" dropdown for a specific form in the folder.
+	 *
+	 * @param array $form The current form.
+	 *
+	 * @return void
+	 */
+	private function render_entries_dropdown( $form ) {
+		$entries_link        = admin_url( 'admin.php?page=gf_entries&view=entries&id=' . $form['id'] );
+		$export_entries_link = admin_url( 'admin.php?page=gf_export&view=export_entry&id=' . $form['id'] );
+		if ( in_array( 'gravityview-importer/gravityview-importer.php', get_option( 'active_plugins' ), true ) ) {
+			$import_entries_link = admin_url( 'admin.php?page=gv-admin-import-entries#targetForm=' . $form['id'] );
+		}
+		?>
+			<div class="dropdown">
+				<a href="<?php echo esc_url( $entries_link ); ?>" class="link">Entries</a>
+				<ul class="dropdown-menu">
+					<li>
+						<a href="<?php echo esc_url( $entries_link ); ?>">Entries</a>
+					</li>
+					<li>
+						<a href="<?php echo esc_url( $export_entries_link ); ?>"> Export Entries </a>
+					</li>
+					<?php
+					if ( isset( $import_entries_link ) ) {
+						?>
+						<li><a href="<?php echo esc_url( $import_entries_link ); ?>">Import Entries</a></li>
+						<?php
+					}
+					?>
+				</ul>
+			</div> |
+		<?php
+	}
 
-                            let formData = new FormData(this);
-                            formData.append('action', action);
+    /**
+     * Renders the "Settings" dropdown for a specific form in the folder.
+     *
+     * @param array $form The current form.
+     * @param array $allowed_svg_tags The allowed SVG tags.
+     * @param array $combined_allowed_html The combined allowed HTML tags.
+     *
+     * @return void
+     */
+	private function render_settings_dropdown( array $form, array $allowed_svg_tags, array $combined_allowed_html ) {
+        $form_settings_link = admin_url( 'admin.php?page=gf_edit_forms&view=settings&subview=settings&id=' . $form['id'] );
 
-                            fetch(ajaxurl, {
-                                method: 'POST',
-                                body: formData
-                            })
-                                .then(response => response.json())
-                                .then(() => location.reload());
-                        });
-                    }
+		$settings_info = GFForms::get_form_settings_sub_menu_items( $form['id'] );
+		?>
+			<div class="dropdown">
+				<a href="<?php echo esc_url( $form_settings_link ); ?>" class="link">Settings</a>
+				<ul class="dropdown-menu">
+					<?php
+					foreach ( $settings_info as $setting ) {
+						$icon_html   = $setting['icon'];
+						$icon_output = '';
 
-                    handleFormSubmission('create-folder-form', 'create_folder');
-                    handleFormSubmission('assign-form-form', 'assign_form_to_folder');
-                });
-			</script>
-		</div>
+						if ( preg_match( '/<svg.*<\/svg>/is', $icon_html, $matches ) ) {
+							$icon_output = wp_kses( $matches[0], $allowed_svg_tags );
+						} elseif ( preg_match( '/<img[^>]+src=["\']([^"\']+)["\']/', $icon_html, $matches ) ) {
+							// Icon is an <img> tag
+							$icon_output = '<img src="' . esc_url( $matches[1] ) . '" alt="" class="settings-icon" />';
+						} elseif ( preg_match( '/class=["\']([^"\']+)["\']/', $icon_html, $matches ) ) {
+							// Icon is a class-based icon
+							$classes = explode( ' ', $matches[1] );
+							$classes = array_map( 'sanitize_html_class', $classes );
+							$classes = implode( ' ', $classes );
+
+							$icon_output = '<span class="dashicons ' . esc_attr( $classes ) . '"></span>';
+						}
+						?>
+						<li>
+							<a href="<?= esc_url( $setting['url'] ); ?>" class="settings-item">
+								<?= wp_kses( $icon_output, $combined_allowed_html ); ?>
+								<?= esc_html( $setting['label'] ); ?>
+							</a>
+						</li>
+						<?php
+					}
+					?>
+				</ul>
+			</div> |
 		<?php
 	}
 }
