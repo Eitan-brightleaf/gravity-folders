@@ -325,6 +325,25 @@ class Form_Folders extends GFAddOn {
 		}
 	}
 
+    /**
+     * Loads stylesheets for the plugin
+     *
+     * @return array
+     */
+    public function styles() {
+        $styles = [
+			[
+				'handle'  => 'form-folders-styles',
+				'src'     => plugins_url( 'assets/css/folders_stylesheet.css', $this->_full_path ),
+				'version' => '1.0.0',
+				'enqueue' => [
+					[ 'query' => 'page=gf-form-folders' ],
+				],
+			],
+		];
+        return array_merge( parent::styles(), $styles );
+    }
+
 	/**
 	 * Renders the Form Folders admin page for the Gravity Forms plugin.
 	 *
@@ -369,8 +388,11 @@ class Form_Folders extends GFAddOn {
             <div class="wrap">
             <h1>Forms in Folder: <?php echo esc_html( $folder->name ); ?> </h1>
             <!--Back button-->
-            <a href="<?php echo esc_url( admin_url( 'admin.php?page=gf-form-folders' ) ); ?>" class="button">Back to All
-                Folders</a>
+            <br>
+            <a href="<?php echo esc_url( admin_url( 'admin.php?page=gf-form-folders' ) ); ?>" class="button">
+                Back to All Folders
+            </a>
+            <br><br>
 
             <!--Forms Table-->
             <table class="wp-list-table widefat fixed striped">
@@ -385,65 +407,112 @@ class Form_Folders extends GFAddOn {
                 <tbody>
 
 				<?php
-				$forms = GFAPI::get_forms();
-				$found = false;
+				$forms                 = GFAPI::get_forms();
+				$found                 = false;
+                $allowed_svg_tags      = [
+					'svg'  => [
+						'xmlns'             => true,
+						'viewbox'           => true,
+						'width'             => true,
+						'height'            => true,
+						'style'             => true,
+						'class'             => true,
+						'enable-background' => true,
+					],
+					'g'    => [
+						'fill'            => true,
+						'stroke'          => true,
+						'stroke-linecap'  => true,
+						'stroke-linejoin' => true,
+						'stroke-width'    => true,
+					],
+					'path' => [
+						'd'         => true,
+						'fill'      => true,
+						'stroke'    => true,
+						'fill-rule' => true,
+					],
+				];
+                $post_html             = wp_kses_allowed_html( 'post' );
+                $combined_allowed_html = array_merge_recursive( $post_html, $allowed_svg_tags );
 
 				foreach ( $forms as $form ) {
 					$remove_form_nonce = wp_create_nonce( 'remove_form' );
 					$form_terms        = wp_get_object_terms( $form['id'], 'gf_form_folders', [ 'fields' => 'ids' ] );
+
+                    $edit_form_link      = admin_url( 'admin.php?page=gf_edit_forms&id=' . $form['id'] );
+					$entries_link        = admin_url( 'admin.php?page=gf_entries&view=entries&id=' . $form['id'] );
+					$export_entries_link = admin_url( 'admin.php?page=gf_export&view=export_entry&id=' . $form['id'] );
+					if ( in_array( 'gravityview-importer/gravityview-importer.php', get_option( 'active_plugins' ), true ) ) {
+						$import_entries_link = admin_url( 'admin.php?page=gv-admin-import-entries#targetForm=' . $form['id'] );
+					}
+					$form_settings_link = admin_url( 'admin.php?page=gf_edit_forms&view=settings&subview=settings&id=' . $form['id'] );
+
 					if ( in_array( $folder_id, $form_terms, true ) ) {
 						$found         = true;
 						$settings_info = GFForms::get_form_settings_sub_menu_items( $form['id'] );
 						?>
                         <tr>
+                            <!--Form Title-->
                             <td>
-                                <a href="<?php echo esc_url( admin_url( 'admin.php?page=gf_edit_forms&id=' . $form['id'] ) ); ?>"><?php echo esc_html( $form['title'] ); ?></a>
+                                <a href="<?php echo esc_url( $edit_form_link ); ?>"><?php echo esc_html( $form['title'] ); ?></a>
                             </td>
-                            <td><code class="copyable" style="cursor: pointer;">[gravityform
-                                    id="<?php echo esc_attr( $form['id'] ); ?>" title="false" description="false"]</code></td>
                             <td>
-                                <a href="<?php echo esc_url( admin_url( 'admin.php?page=gf_edit_forms&id=' . $form['id'] ) ); ?>">Edit</a>
-                                |
-                                <div class="dropdown" style="display: inline-block; position: relative;">
-                                    <a href="<?php echo esc_url( admin_url( 'admin.php?page=gf_entries&view=entries&id=' . $form['id'] ) ); ?>"
-                                        class="link">Entries</a>
-                                    <ul class="dropdown-menu"
-                                        style="display: none; list-style: none; margin: 0; padding: 5px 0; background: #fff; border: 1px solid #ddd; position: absolute; top: 20px; left: 0; z-index: 1000; width: 200px; box-shadow: 0 1px 6px rgba(0, 0, 0, 0.1);">
-                                        <li style="padding: 5px 10px;"><a
-                                                    href="<?php echo esc_url( admin_url( 'admin.php?page=gf_entries&id=' . $form['id'] ) ); ?>">Entries</a>
+                                <code class="copyable">
+                                    [gravityform id="<?php echo esc_attr( $form['id'] ); ?>" title="false" description="false"]
+                                </code>
+                            </td>
+                            <td>
+                                <a href="<?php echo esc_url( $edit_form_link ); ?>">Edit</a> |
+                                <a href="#" onclick="DuplicateForm(<?php echo esc_attr( $form['id'] ); ?>);return false;">Duplicate</a> | <!--FIXME: Duplicate Form-->
+                                <div class="dropdown">
+                                    <a href="<?php echo esc_url( $entries_link ); ?>" class="link">Entries</a>
+                                    <ul class="dropdown-menu">
+                                        <li>
+                                            <a href="<?php echo esc_url( $entries_link ); ?>">Entries</a>
                                         </li>
-                                        <li style="padding: 5px 10px;"><a
-                                                    href="<?php echo esc_url( admin_url( 'admin.php?page=gf_export&view=export_entry&id=' . $form['id'] ) ); ?>">Export
-                                                Entries</a></li>
+                                        <li>
+                                            <a href="<?php echo esc_url( $export_entries_link ); ?>"> Export Entries </a>
+                                        </li>
 										<?php
-										if ( in_array( 'gravityview-importer/gravityview-importer.php', get_option( 'active_plugins' ), true ) ) {
+										if ( isset( $import_entries_link ) ) {
 											?>
-                                            <li style="padding: 5px 10px;"><a
-                                                        href="<?php echo esc_url( admin_url( 'admin.php?page=gv-admin-import-entries#targetForm=' . $form['id'] ) ); ?>">Import
-                                                    Entries</a></li>
+                                            <li><a href="<?php echo esc_url( $import_entries_link ); ?>">Import Entries</a></li>
 											<?php
 										}
 										?>
                                     </ul>
-                                </div>
-                                |
-                                <div class="dropdown" style="display: inline-block; position: relative;">
-                                    <a href="<?php echo esc_url( admin_url( 'admin.php?page=gf_edit_forms&view=settings&subview=settings&id=' . $form['id'] ) ); ?>"
+                                </div> |
+                                <div class="dropdown">
+                                    <a href="<?php echo esc_url( $form_settings_link ); ?>"
                                         class="link">Settings</a>
-                                    <!--Dropdown menu styling-->
-                                    <ul class="dropdown-menu"
-                                        style="display: none; list-style: none; margin: 0; padding: 5px 0; background: #fff; border: 1px solid #ddd; position: absolute; top: 20px; left: 0; z-index: 1000; width: 200px; box-shadow: 0 1px 6px rgba(0, 0, 0, 0.1);">
+                                    <ul class="dropdown-menu">
 										<?php
 										foreach ( $settings_info as $setting ) {
+											$icon_html   = $setting['icon'];
+											$icon_output = '';
+
+											if ( preg_match( '/<svg.*<\/svg>/is', $icon_html, $matches ) ) {
+												$icon_output = wp_kses( $matches[0], $allowed_svg_tags );
+											} elseif ( preg_match( '/<img[^>]+src=["\']([^"\']+)["\']/', $icon_html, $matches ) ) {
+												// Icon is an <img> tag
+												$icon_output = '<img src="' . esc_url( $matches[1] ) . '" alt="" class="settings-icon" />';
+											} elseif ( preg_match( '/class=["\']([^"\']+)["\']/', $icon_html, $matches ) ) {
+												// Icon is a class-based icon
+												$classes = explode( ' ', $matches[1] );
+                                                $classes = array_map( 'sanitize_html_class', $classes );
+                                                $classes = implode( ' ', $classes );
+
+												$icon_output = '<span class="dashicons ' . esc_attr( $classes ) . '"></span>';
+											}
 											?>
-                                            <li style="padding: 5px 10px;">
-                                                <a href="<?php echo esc_url( $setting['url'] ); ?>"
-                                                    style="text-decoration: none; color: #0073aa; display: flex; align-items: center; gap: 5px;">
-                                                    <span class="dashicons <?php echo esc_attr( $setting['icon'] ); ?>"></span>
-													<?php echo esc_html( $setting['label'] ); ?>
+                                            <li>
+                                                <a href="<?php echo esc_url( $setting['url'] ); ?>" class="settings-item">
+												    <?php echo wp_kses( $icon_output, $combined_allowed_html ); ?>
+												    <?php echo esc_html( $setting['label'] ); ?>
                                                 </a>
                                             </li>
-											<?php
+												<?php
 										}
 										?>
                                     </ul>
