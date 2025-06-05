@@ -245,12 +245,12 @@ class Form_Folders extends GFAddOn {
 			wp_die();
 		}
 
-		if ( empty( $_POST['form_id'] ) ) {
+		if ( empty( $_POST['formID'] ) ) {
 			wp_send_json_error( [ 'message' => 'Form ID is required' ], 403 );
 			wp_die();
 		}
 
-		$form_id = absint( $_POST['form_id'] );
+		$form_id = absint( $_POST['formID'] );
 
 		$result = wp_set_object_terms( $form_id, [], 'gf_form_folders' );
 
@@ -278,13 +278,13 @@ class Form_Folders extends GFAddOn {
 			wp_die();
 		}
 
-		if ( empty( $_POST['folder_id'] ) || empty( $_POST['folder_name'] ) ) {
+		if ( empty( $_POST['folderID'] ) || empty( $_POST['folderName'] ) ) {
 			wp_send_json_error( [ 'message' => __( 'Missing required parameters.', 'my-textdomain' ) ], 400 );
 			wp_die();
 		}
 
-		$folder_id   = absint( $_POST['folder_id'] );
-		$folder_name = sanitize_text_field( wp_unslash( $_POST['folder_name'] ) );
+		$folder_id   = absint( $_POST['folderID'] );
+		$folder_name = sanitize_text_field( wp_unslash( $_POST['folderName'] ) );
 
 		$folder = get_term( $folder_id, 'gf_form_folders' );
 		if ( is_wp_error( $folder ) || ! $folder ) {
@@ -346,6 +346,26 @@ class Form_Folders extends GFAddOn {
 		return array_merge( parent::styles(), $styles );
 	}
 
+    /**
+     * Loads scripts for the plugin
+     *
+     * @return array[]
+     */
+    public function scripts() {
+        $scripts = [
+            [
+                'handle'  => 'form-folders-scripts',
+                'src'     => plugins_url( 'assets/js/folders_script.js', $this->_full_path ),
+                'version' => '1.0.0',
+                'deps'    => [ 'jquery' ],
+                'enqueue' => [
+                    [ 'query' => 'page=gf-form-folders' ],
+                ],
+            ],
+        ];
+        return array_merge( parent::scripts(), $scripts );
+    }
+
 	/**
 	 * Renders the Form Folders admin page for the Gravity Forms plugin.
 	 *
@@ -360,7 +380,11 @@ class Form_Folders extends GFAddOn {
 			wp_die( 'You do not have sufficient permissions to access this page.' );
 		}
 
-        wp_enqueue_style( 'wp-admin-common', admin_url( 'load-styles.php?c=1&dir=ltr&load=common' ) ); // phpcs:ignore WordPress.WP.EnqueuedResourceParameters.MissingVersion
+        wp_add_inline_script(
+		'form-folders-scripts',
+		'const ajaxurl = "' . admin_url( 'admin-ajax.php' ) . '";',
+		'before'
+	    );
 
 		if ( rgget( 'folder_id' ) ) {
 			$this->render_single_folder_page();
@@ -440,6 +464,7 @@ class Form_Folders extends GFAddOn {
 						$post_html             = wp_kses_allowed_html( 'post' );
 						$combined_allowed_html = array_merge_recursive( $post_html, $allowed_svg_tags );
 						$remove_form_nonce     = wp_create_nonce( 'remove_form' );
+                        $rename_folder_nonce   = wp_create_nonce( 'rename_folder' );
 
 						foreach ( $forms as $form ) {
 							$form_terms = wp_get_object_terms( $form['id'], 'gf_form_folders', [ 'fields' => 'ids' ] );
@@ -464,7 +489,7 @@ class Form_Folders extends GFAddOn {
 									<?php $this->render_links_td_section( $form, $allowed_svg_tags, $combined_allowed_html ); ?>
 									<!--Buttons-->
 									<td>
-										<button class="remove-form" onclick="remove_form(<?php echo esc_attr( $form['id'] ) . ', \'' . esc_attr( $remove_form_nonce ) . '\''; ?>);">
+										<button type="button" class="remove-form" data-form-id="<?php echo esc_attr( $form['id'] ); ?>" data-nonce="<?php echo esc_attr( $remove_form_nonce ); ?>">
 											Remove
 										</button>
 									</td>
@@ -476,7 +501,6 @@ class Form_Folders extends GFAddOn {
 						if ( ! $found ) {
 							echo '<tr><td colspan="4">No forms found in this folder.</td></tr>';
 						}
-						$rename_folder_nonce = wp_create_nonce( 'rename_folder' );
 						?>
 					</tbody>
 				</table>
@@ -490,70 +514,6 @@ class Form_Folders extends GFAddOn {
 					<input type="hidden" name="nonce" value="<?php echo esc_attr( $rename_folder_nonce ); ?>">
 					<button type="submit">Rename Folder</button>
 				</form>
-
-				<script>
-					document.addEventListener('DOMContentLoaded', function() {
-						// Enable hover functionality
-						document.querySelectorAll('.dropdown').forEach(function(dropdown) {
-							const link = dropdown.querySelector('.link');
-							const menu = dropdown.querySelector('.dropdown-menu');
-
-							// Show dropdown on hover
-							link.addEventListener('mouseover', function() {
-								menu.style.display = 'block';
-							});
-
-							menu.addEventListener('mouseover', function() {
-								menu.style.display = 'block';
-							});
-
-							// Hide dropdown when the mouse leaves
-							dropdown.addEventListener('mouseleave', function() {
-								menu.style.display = 'none';
-							});
-						});
-
-						function handleFormSubmission(formId, action) {
-							document.getElementById(formId).addEventListener('submit', function(e) {
-								e.preventDefault();
-
-								let formData = new FormData(this);
-								formData.append('action', action);
-
-								fetch(ajaxurl, {
-										method: 'POST',
-										body: formData
-									})
-									.then(response => response.json())
-									.then(() => location.reload());
-							});
-						};
-						handleFormSubmission('rename-folder-form', 'rename_folder');
-						remove_form = function(formID, nonce) {
-							const body = `action=remove_form_from_folder&form_id=${encodeURIComponent(formID)}&nonce=${encodeURIComponent(nonce)}`;
-
-							fetch(ajaxurl, {
-									method: 'POST',
-									headers: {
-										'Content-Type': 'application/x-www-form-urlencoded', // Specify the correct content type
-									},
-									body,
-								})
-								.then(response => response.json())
-								.then(() => location.reload())
-								.catch(error => console.error('Error:', error));
-						};
-						document.querySelectorAll(".copyable").forEach(function(element) {
-							element.addEventListener("click", function() {
-								navigator.clipboard.writeText(element.innerHTML);
-								element.style.backgroundColor = "#d4edda"; // Light green to indicate success
-								setTimeout(() => {
-									element.style.backgroundColor = ""; // Revert after a short delay
-								}, 1000);
-							});
-						});
-					});
-				</script>
 
 			<?php
 			echo '</div>';
@@ -582,7 +542,7 @@ class Form_Folders extends GFAddOn {
 				<!--Settings + Dropdown-->
 				<?php $this->render_settings_dropdown( $form, $allowed_svg_tags, $combined_allowed_html ); ?>
 				<!--Delete Form-->
-				<a href="#" class="trash" onclick="DeleteForm(<?php echo esc_attr( $form['id'] ); ?>);return false;">Trash</a>
+				<a href="#" class="trash" onclick="DeleteForm(<?php echo esc_attr( $form['id'] ); ?>);return false;">Trash</a> <!--FIXME: Delete Form-->
 			</td>
 		<?php
 	}
