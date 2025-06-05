@@ -54,7 +54,7 @@ class Form_Folders extends GFAddOn {
 	 *
 	 * @var array
 	 */
-	protected $_capabilities = [ 'gf_form_folders', 'gf_form_folders_uninstall' ];
+	protected $_capabilities = [ 'gf_form_folders_uninstall' ];
 	/**
 	 * Holds the capability required for uninstallation.
 	 *
