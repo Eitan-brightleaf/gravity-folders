@@ -378,7 +378,8 @@ class Form_Folders extends GFAddOn {
         }
 
         $form_id = absint( $_POST['formID'] );
-        if ( ! is_wp_error( GFFormsModel::trash_form( $form_id ) ) ) {
+        $result  = GFFormsModel::trash_form( $form_id ); // method returns true for failure to trash and false for successfully trashing. weird.
+        if ( ! is_wp_error( $result ) && ! $result ) {
 
             $result = wp_set_object_terms( $form_id, [], 'gf_form_folders' );
 
