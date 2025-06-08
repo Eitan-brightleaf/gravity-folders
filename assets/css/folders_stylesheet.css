@@ -44,6 +44,33 @@
     display: inline-block;
 }
 
+.form-field-sub-label {
+    font-size: 1.2em;
+    font-weight: bold;
+    margin-bottom: 0.5em;
+    display: inline-block;
+}
+
 li {
     padding: 5px 10px;
+}
+
+.folder-item {
+    font-size: 3em;
+}
+
+.folder-icon {
+    margin-right: 5px;
+}
+
+.folder-forms {
+    display: flex;
+    gap: 20px;
+    align-items: flex-start;
+    justify-content: flex-start;
+    max-width: 800px;
+}
+
+.folder-forms-item {
+    flex: 1;
 }

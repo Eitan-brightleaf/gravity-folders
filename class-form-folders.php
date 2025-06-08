@@ -98,7 +98,7 @@ class Form_Folders extends GFAddOn {
 		$this->register_form_folders_taxonomy();
 
 		add_action( 'wp_ajax_create_folder', [ $this, 'handle_create_folder' ] );
-		add_action( 'wp_ajax_assign_forms_to_folder', [ $this, 'handle_assign_form_to_folder' ] );
+		add_action( 'wp_ajax_assign_forms_to_folder', [ $this, 'handle_assign_forms_to_folder' ] );
 		add_action( 'wp_ajax_remove_form_from_folder', [ $this, 'handle_remove_form_from_folder' ] );
 		add_action( 'wp_ajax_rename_folder', [ $this, 'handle_folder_renaming' ] );
 		add_action( 'wp_ajax_delete_folder', [ $this, 'handle_folder_deletion' ] );
@@ -172,12 +172,12 @@ class Form_Folders extends GFAddOn {
 			wp_die();
 		}
 
-		if ( empty( $_POST['folder_name'] ) ) {
+		if ( empty( $_POST['folderName'] ) ) {
 			wp_send_json_error( [ 'message' => 'Folder name is required' ], 403 );
 			wp_die();
 		}
 
-		$folder_name = sanitize_text_field( wp_unslash( $_POST['folder_name'] ) );
+		$folder_name = sanitize_text_field( wp_unslash( $_POST['folderName'] ) );
 		$inserted    = wp_insert_term( $folder_name, 'gf_form_folders' );
 
 		if ( is_wp_error( $inserted ) ) {
@@ -198,7 +198,7 @@ class Form_Folders extends GFAddOn {
 	 *
 	 * @return void Outputs a JSON response indicating success or failure.
 	 */
-	public function handle_assign_form_to_folder() {
+	public function handle_assign_forms_to_folder() {
 		if ( ! isset( $_POST['nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['nonce'] ) ), 'assign_form' ) ) {
 			wp_send_json_error( [ 'message' => 'Invalid nonce. Request rejected.' ], 403 );
 			wp_die();
@@ -314,10 +314,10 @@ class Form_Folders extends GFAddOn {
 			wp_send_json_error( [ 'message' => 'Invalid nonce. Request rejected.' ], 403 );
 			wp_die();
 		}
-		if ( empty( $_POST['folder_id'] ) ) {
+		if ( empty( $_POST['folderID'] ) ) {
 			wp_send_json_error( [ 'message' => 'Missing required parameters.' ], 400 );
 		}
-		$folder_id = absint( $_POST['folder_id'] );
+		$folder_id = absint( $_POST['folderID'] );
 		$folder    = get_term( $folder_id, 'gf_form_folders' );
 		if ( is_wp_error( $folder ) || ! $folder ) {
 			wp_send_json_error( [ 'message' => 'The specified folder does not exist.' ], 404 );
@@ -575,7 +575,7 @@ class Form_Folders extends GFAddOn {
 				</table>
 				<br><br>
 
-				<!--<h2>Rename Folder</h2>-->
+				<!--Rename Folder-->
 				<form id="rename-folder-form">
 					<label for="folder_name" class="form-field-label">Rename Folder</label><br>
 					<input type="text" id="folder_name" name="folder_name" placeholder="Folder Name" required>
@@ -586,6 +586,7 @@ class Form_Folders extends GFAddOn {
 
                 <br><br>
 
+                <!--Assign Forms to Current Folder-->
 				<form id="assign-forms-form">
 					<label for="form_ids" class="form-field-label">Assign Forms to Folder</label><br>
 					<select id="form_ids" name="form_ids[]" required multiple size="8">
@@ -638,6 +639,18 @@ class Form_Folders extends GFAddOn {
 	 * @return void
 	 */
 	private function render_form_folders_page() {
+
+        $create_folder_nonce = wp_create_nonce( 'create_folder' );
+        $assign_form_nonce   = wp_create_nonce( 'assign_form' );
+        $view_folder_nonce   = wp_create_nonce( 'view_folder' );
+        $delete_folder_nonce = wp_create_nonce( 'delete_folder' );
+        $folders             = get_terms(
+						            [
+							            'taxonomy'   => 'gf_form_folders',
+							            'hide_empty' => false,
+						            ]
+					            );
+
 		?>
 			<div class="wrap">
 				<h1>Form Folders</h1>
@@ -645,106 +658,73 @@ class Form_Folders extends GFAddOn {
 				<ul>
 					<?php
 
-					$create_folder_nonce = wp_create_nonce( 'create_folder' );
-					$assign_form_nonce   = wp_create_nonce( 'assign_form' );
-					$view_folder_nonce   = wp_create_nonce( 'view_folder' );
-					$folders             = get_terms(
-						[
-							'taxonomy'   => 'gf_form_folders',
-							'hide_empty' => false,
-						]
-					);
-
 					foreach ( $folders as $folder ) {
-						$form_count = count( get_objects_in_term( $folder->term_id, 'gf_form_folders' ) );
-						echo '<li style="font-size: 3em;">
-				<a href="' . esc_url( admin_url( 'admin.php?page=gf-form-folders&folder_id=' . $folder->term_id . '&view_folder_nonce=' . $view_folder_nonce ) ) . '">
-				<span class="dashicons dashicons-category" style="margin-right: 5px;"></span> ' . esc_html( $folder->name ) . ' (' . esc_html( $form_count ) . ')
-				</a>';
+						$form_count  = count( get_objects_in_term( $folder->term_id, 'gf_form_folders' ) );
+                        $folder_link = admin_url( 'admin.php?page=gf-form-folders&folder_id=' . $folder->term_id . '&view_folder_nonce=' . $view_folder_nonce );
+                        ?>
+                        <li class="folder-item">
+                            <a href="<?= esc_url( $folder_link ); ?>">
+                                <span class="dashicons dashicons-category folder-icon"></span> <?= esc_html( $folder->name ); ?> (<?= esc_html( $form_count ); ?>)
+                            </a>
+                        <?php
 						if ( ! $form_count ) {
-							$delete_folder_nonce = wp_create_nonce( 'delete_folder' );
-							echo '&nbsp;&nbsp;<button class="button" onclick="delete_folder(' . esc_attr( $folder->term_id ) . ', \'' . esc_attr( $delete_folder_nonce ) . '\')">Delete Folder</button>';
+                            ?>
+							&nbsp;&nbsp;
+							<button class="button delete-folder-button" data-folder-id="<?= esc_attr( $folder->term_id ); ?>" data-nonce="<?= esc_attr( $delete_folder_nonce ); ?>">Delete Folder</button>
+							<?php
 						}
-						echo '</li>';
-						echo '<br><br>';
+                        ?>
+                        </li>
+					    <br><br>
+						<?php
 					}
 					?>
 				</ul>
 
-				<div style="display: flex; gap: 20px; align-items: flex-start; justify-content: flex-start; max-width: 800px;">
-					<div style="flex: 1;">
-						<h2>Create a New Folder</h2>
+				<div class="folder-forms">
+					<div class="folder-forms-item">
 						<form id="create-folder-form">
+						    <label for="folder_name" class="form-field-label">Create A New Folder</label><br>
 							<input type="text" id="folder_name" name="folder_name" placeholder="Folder Name" required>
 							<input type="hidden" name="nonce" value="<?php echo esc_attr( $create_folder_nonce ); ?>">
-							<button type="submit">Create Folder</button>
+							<button type="submit" class="button">Create Folder</button>
 						</form>
 					</div>
 
-					<div style="flex: 1;">
-						<h2>Assign a Form to a Folder</h2>
-						<form id="assign-form-form">
-							<select id="form_id" name="form_id" required>
-								<option value="">Select an Unassigned Form</option>
+					<div class="folder-forms-item">
+					    <label for="assign-forms-form" class="form-field-label">Assign Form(s) to a Folder</label>
+						<form id="assign-forms-form">
+							<label for="form_id" class="form-field-sub-label">Select Form(s) to Assign</label><br>
+							<select id="form_id" name="form_ids[]" required multiple size="8">
 								<?php
 								$all_forms = GFAPI::get_forms();
 								foreach ( $all_forms as $form ) {
 									$assigned_folders = wp_get_object_terms( $form['id'], 'gf_form_folders', [ 'fields' => 'ids' ] );
 									if ( empty( $assigned_folders ) ) {
-										echo '<option value="' . esc_attr( $form['id'] ) . '">' . esc_html( $form['title'] ) . '</option>';
+                                        ?>
+										<option value="<?= esc_attr( $form['id'] ); ?>"><?= esc_html( $form['title'] ); ?></option>
+										<?php
 									}
 								}
 								?>
 							</select>
+							<br><br>
+							<label for="folder_id" class="form-field-sub-label">Select a Folder to Assign To</label><br>
 							<select id="folder_id" name="folder_id" required>
 								<option value="">Select a Folder</option>
 								<?php
 								foreach ( $folders as $folder ) {
-									echo '<option value="' . esc_attr( $folder->term_id ) . '">' . esc_html( $folder->name ) . '</option>';
+                                    ?>
+									<option value="<?= esc_attr( $folder->term_id ); ?>"><?= esc_html( $folder->name ); ?></option>
+									<?php
 								}
 								?>
 							</select>
 							<input type="hidden" name="nonce" value="<?php echo esc_attr( $assign_form_nonce ); ?>">
-							<button type="submit">Assign Form</button>
+							<button type="submit" class="button">Assign Form(s)</button>
 						</form>
 					</div>
 				</div>
-				<script>
-					document.addEventListener('DOMContentLoaded', function() {
-						delete_folder = function(folder_id, nonce) {
-							const body = `action=delete_folder&folder_id=${encodeURIComponent(folder_id)}&nonce=${encodeURIComponent(nonce)}`;
-							fetch(ajaxurl, {
-									method: 'POST',
-									headers: {
-										'Content-Type': 'application/x-www-form-urlencoded', // Specify the correct content type
-									},
-									body,
-								})
-								.then(response => response.json())
-								.then(() => location.reload())
-								.catch(error => console.error('Error:', error));
-						}
-
-						function handleFormSubmission(formId, action) {
-							document.getElementById(formId).addEventListener('submit', function(e) {
-								e.preventDefault();
-
-								let formData = new FormData(this);
-								formData.append('action', action);
-
-								fetch(ajaxurl, {
-										method: 'POST',
-										body: formData
-									})
-									.then(response => response.json())
-									.then(() => location.reload());
-							});
-						}
-
-						handleFormSubmission('create-folder-form', 'create_folder');
-						handleFormSubmission('assign-form-form', 'assign_form_to_folder');
-					});
-				</script>
 			</div>
 		<?php
 	}

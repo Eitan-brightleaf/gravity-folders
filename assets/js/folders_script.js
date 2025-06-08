@@ -30,12 +30,13 @@ jQuery(($) => {
 	$('#rename-folder-form').on('submit', function (e) {
 		e.preventDefault();
 
+		const action = 'rename_folder';
 		const folderID = $(this).find('[name="folder_id"]').val();
 		const folderName = $(this).find('[name="folder_name"]').val();
 		const nonce = $(this).find('[name="nonce"]').val();
 
 		makeAjaxRequest({
-			action: 'rename_folder',
+			action,
 			folderID,
 			folderName,
 			nonce,
@@ -45,12 +46,13 @@ jQuery(($) => {
 	$('#assign-forms-form').on('submit', function (e) {
 		e.preventDefault();
 
+		const action = 'assign_forms_to_folder';
 		const folderID = $(this).find('[name="folder_id"]').val();
 		const formIDs = $(this).find('[name="form_ids[]"]').val();
 		const nonce = $(this).find('[name="nonce"]').val();
 
 		makeAjaxRequest({
-			action: 'assign_forms_to_folder',
+			action,
 			formIDs,
 			folderID,
 			nonce,
@@ -64,7 +66,6 @@ jQuery(($) => {
 
 		const urlParams = new URLSearchParams(window.location.search);
 		const folderID = urlParams.get('folder_id'); // could be null
-
 
 		makeAjaxRequest({
 			action,
@@ -86,5 +87,30 @@ jQuery(($) => {
 			.catch((err) => {
 				console.error('Clipboard copy failed:', err);
 			});
+	});
+
+	$('#create-folder-form').on('submit', function (e) {
+		e.preventDefault();
+
+		const action = 'create_folder';
+		const folderName = $(this).find('[name="folder_name"]').val();
+		const nonce = $(this).find('[name="nonce"]').val();
+
+		makeAjaxRequest({
+			action,
+			folderName,
+			nonce,
+		});
+	});
+
+	$('.delete-folder-button').on('click', function () {
+		const action = 'delete_folder';
+		const folderID = $(this).data('folder-id');
+		const nonce = $(this).data('nonce');
+		makeAjaxRequest({
+			action,
+			folderID,
+			nonce,
+		});
 	});
 });
