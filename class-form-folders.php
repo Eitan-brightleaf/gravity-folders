@@ -339,21 +339,24 @@ class Form_Folders extends GFAddOn {
      */
     public function uninstall() {
 
+        $forms = GFAPI::get_forms();
+        foreach ( $forms as $form ) {
+	        wp_set_object_terms( $form['id'], [], 'gf_form_folders' );
+        }
+
+
 		// Delete the taxonomy folders
-		$folders = get_terms(
-        [
+		$folder_ids = get_terms([
 			'taxonomy'   => 'gf_form_folders',
 			'hide_empty' => false,
 			'fields'     => 'ids',
-		]
-        );
+		]);
 
-		if ( ! is_wp_error( $folders ) && ! empty( $folders ) ) {
-			foreach ( $folders as $folder ) {
-				wp_delete_term( $folder->term_id, 'gf_form_folders' );
+		if ( ! is_wp_error( $folder_ids ) ) {
+			foreach ( $folder_ids as $folder ) {
+				wp_delete_term( $folder, 'gf_form_folders' );
 			}
 		}
-        unregister_taxonomy( 'gf_form_folders' );
     }
 
     /**
