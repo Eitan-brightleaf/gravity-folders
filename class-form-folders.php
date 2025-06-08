@@ -140,7 +140,8 @@ class Form_Folders extends GFAddOn {
 	 * @return void
 	 */
 	private function register_form_folders_taxonomy() {
-		register_taxonomy(
+		if ( ! taxonomy_exists( 'gf_form_folders' ) ) {
+			register_taxonomy(
 			'gf_form_folders',
 			'gf_form',
 			[
@@ -150,7 +151,8 @@ class Form_Folders extends GFAddOn {
 				'show_admin_column' => true,
 				'hierarchical'      => false,
 			]
-		);
+			);
+        }
 	}
 
 	/**
@@ -329,6 +331,30 @@ class Form_Folders extends GFAddOn {
 			wp_send_json_success( [ 'message' => 'Folder deleted successfully.' ] );
 		}
 	}
+
+    /**
+     * Deletes all plugin created data during uninstall
+     *
+     * @return void
+     */
+    public function uninstall() {
+
+		// Delete the taxonomy folders
+		$folders = get_terms(
+        [
+			'taxonomy'   => 'gf_form_folders',
+			'hide_empty' => false,
+			'fields'     => 'ids',
+		]
+        );
+
+		if ( ! is_wp_error( $folders ) && ! empty( $folders ) ) {
+			foreach ( $folders as $folder ) {
+				wp_delete_term( $folder->term_id, 'gf_form_folders' );
+			}
+		}
+        unregister_taxonomy( 'gf_form_folders' );
+    }
 
     /**
      * Duplicates a form via an AJAX request.
@@ -629,6 +655,10 @@ class Form_Folders extends GFAddOn {
 				<?php $this->render_entries_dropdown( $form ); ?>
 				<!--Settings + Dropdown-->
 				<?php $this->render_settings_dropdown( $form, $allowed_svg_tags, $combined_allowed_html ); ?>
+				<!--Live Preview-->
+				<?php $this->maybe_render_live_preview_link( $form ); ?>
+				<!--Connected Views-->
+				<?php $this->maybe_render_connected_views_link( $form ); ?>
 			</td>
 		<?php
 	}
@@ -836,5 +866,74 @@ class Form_Folders extends GFAddOn {
                     </button>
                 </td>
                 <?php
+	}
+
+	/**
+     * Conditionally renders a live preview link for a form if the GP_Live_Preview class is available.
+     *
+     * @param array $form The form array containing form data including the form ID.
+     *
+     * @return void
+     */
+	private function maybe_render_live_preview_link( array $form ) {
+		if ( ! class_exists( 'GP_Live_Preview' ) ) {
+			return;
+		}
+			$gp_live_preview = GP_Live_Preview::get_instance();
+			$preview_url     = $gp_live_preview->add_options_to_url( $gp_live_preview->get_preview_url( $form['id'] ) );
+		?>
+			| <a href="<?= esc_url( $preview_url ); ?>" target="_blank">Live Preview</a>
+			<?php
+	}
+    /**
+     * Creates a dropdown of all views connected to the form or a create view link
+     *
+     * @param array $form The current form.
+     *
+     * @return void
+     */
+    private function maybe_render_connected_views_link( array $form ) {
+		// Check if GravityView is active
+		if ( ! class_exists( 'GVCommon' ) ) {
+			return;
+		}
+
+		// Get connected views for this form
+		$connected_views = GVCommon::get_connected_views( $form['id'], array( 'post_status' => 'any' ) );
+
+		// If no connected views, show a link to create one
+		if ( empty( $connected_views ) ) {
+			?>
+        | <a href="<?php echo esc_url( admin_url( 'post-new.php?post_type=gravityview&form_id=' . $form['id'] ) ); ?>" target="_blank">Create a View</a>
+			<?php
+			return;
+		}
+
+		// If there are connected views, show a dropdown
+		?>
+    <div class="dropdown">
+        | <a href="#" class="link">Connected Views</a>
+        <ul class="dropdown-menu">
+            <?php
+            foreach ( $connected_views as $view ) {
+                $label = empty( $view->post_title ) ? sprintf( 'No Title (View #%d)', $view->ID ) : $view->post_title;
+                ?>
+                <li>
+                    <a href="<?php echo esc_url( admin_url( 'post.php?action=edit&post=' . $view->ID ) ); ?>">
+                        <?php echo esc_html( $label ); ?>
+                    </a>
+                </li>
+                <?php
+            }
+            ?>
+            <li>
+                <a href="<?php echo esc_url( admin_url( 'post-new.php?post_type=gravityview&form_id=' . $form['id'] ) ); ?>">
+                    <span class="dashicons dashicons-plus"></span>
+                    Create a View
+                </a>
+            </li>
+        </ul>
+    </div>
+		<?php
 	}
 }
