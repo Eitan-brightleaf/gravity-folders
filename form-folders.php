@@ -17,6 +17,12 @@ add_action(
 		require_once 'includes/class-form-folders.php';
 
 		GFAddOn::register( 'Form_Folders' );
+
+		// Load Views Folders class if GravityView is active
+		if ( class_exists( 'GVCommon' ) ) {
+			require_once 'includes/class-views-folders.php';
+			GFAddOn::register( 'Views_Folders' );
+		}
 	}
 );
 
@@ -31,6 +37,18 @@ define( 'FORM_FOLDERS_BASENAME', plugin_basename( __FILE__ ) );
 function form_folders() {
 	if ( class_exists( 'Form_Folders' ) ) {
 		return Form_Folders::get_instance();
+	}
+	return null;
+}
+
+/**
+ * Returns the instance of the Views_Folders class.
+ *
+ * @return Views_Folders|null
+ */
+function views_folders() {
+	if ( class_exists( 'Views_Folders' ) ) {
+		return Views_Folders::get_instance();
 	}
 	return null;
 }

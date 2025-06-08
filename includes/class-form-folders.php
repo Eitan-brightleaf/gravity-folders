@@ -344,13 +344,14 @@ class Form_Folders extends GFAddOn {
 	        wp_set_object_terms( $form['id'], [], 'gf_form_folders' );
         }
 
-
 		// Delete the taxonomy folders
-		$folder_ids = get_terms([
-			'taxonomy'   => 'gf_form_folders',
-			'hide_empty' => false,
-			'fields'     => 'ids',
-		]);
+		$folder_ids = get_terms(
+            [
+				'taxonomy'   => 'gf_form_folders',
+				'hide_empty' => false,
+				'fields'     => 'ids',
+			]
+            );
 
 		if ( ! is_wp_error( $folder_ids ) ) {
 			foreach ( $folder_ids as $folder ) {
@@ -527,7 +528,7 @@ class Form_Folders extends GFAddOn {
 						<tr>
 							<th>Form Name</th>
 							<th>Shortcode</th>
-							<th>Settings</th>
+							<th>Links</th>
 							<th>Actions</th>
 						</tr>
 					</thead>
@@ -895,48 +896,48 @@ class Form_Folders extends GFAddOn {
      *
      * @return void
      */
-    private function maybe_render_connected_views_link( array $form ) {
-		// Check if GravityView is active
+	private function maybe_render_connected_views_link( array $form ) {
+			// Check if GravityView is active
 		if ( ! class_exists( 'GVCommon' ) ) {
 			return;
 		}
 
-		// Get connected views for this form
-		$connected_views = GVCommon::get_connected_views( $form['id'], array( 'post_status' => 'any' ) );
+			// Get connected views for this form
+			$connected_views = GVCommon::get_connected_views( $form['id'], array( 'post_status' => 'any' ) );
 
-		// If no connected views, show a link to create one
+			// If no connected views, show a link to create one
 		if ( empty( $connected_views ) ) {
 			?>
-        | <a href="<?php echo esc_url( admin_url( 'post-new.php?post_type=gravityview&form_id=' . $form['id'] ) ); ?>" target="_blank">Create a View</a>
+				| <a href="<?php echo esc_url( admin_url( 'post-new.php?post_type=gravityview&form_id=' . $form['id'] ) ); ?>" target="_blank">Create a View</a>
 			<?php
 			return;
 		}
 
-		// If there are connected views, show a dropdown
+			// If there are connected views, show a dropdown
 		?>
-    <div class="dropdown">
-        | <a href="#" class="link">Connected Views</a>
-        <ul class="dropdown-menu">
-            <?php
-            foreach ( $connected_views as $view ) {
-                $label = empty( $view->post_title ) ? sprintf( 'No Title (View #%d)', $view->ID ) : $view->post_title;
-                ?>
-                <li>
-                    <a href="<?php echo esc_url( admin_url( 'post.php?action=edit&post=' . $view->ID ) ); ?>">
-                        <?php echo esc_html( $label ); ?>
-                    </a>
-                </li>
-                <?php
-            }
-            ?>
-            <li>
-                <a href="<?php echo esc_url( admin_url( 'post-new.php?post_type=gravityview&form_id=' . $form['id'] ) ); ?>">
-                    <span class="dashicons dashicons-plus"></span>
-                    Create a View
-                </a>
-            </li>
-        </ul>
-    </div>
+			<div class="dropdown">
+				| <a href="#" class="link">Connected Views</a>
+				<ul class="dropdown-menu">
+					<?php
+					foreach ( $connected_views as $view ) {
+						$label = empty( $view->post_title ) ? sprintf( 'No Title (View #%d)', $view->ID ) : $view->post_title;
+						?>
+						<li>
+							<a href="<?php echo esc_url( admin_url( 'post.php?action=edit&post=' . $view->ID ) ); ?>">
+								<?php echo esc_html( $label ); ?>
+							</a>
+						</li>
+						<?php
+					}
+					?>
+					<li>
+						<a href="<?php echo esc_url( admin_url( 'post-new.php?post_type=gravityview&form_id=' . $form['id'] ) ); ?>">
+							<span class="dashicons dashicons-plus"></span>
+							Create a View
+						</a>
+					</li>
+				</ul>
+			</div>
 		<?php
 	}
 }
