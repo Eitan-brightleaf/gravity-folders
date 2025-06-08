@@ -435,7 +435,7 @@ class Form_Folders extends GFAddOn {
 		$styles = [
 			[
 				'handle'  => 'form-folders-styles',
-				'src'     => plugins_url( 'assets/css/folders_stylesheet.css', $this->_full_path ),
+				'src'     => plugins_url( 'assets/css/folders_stylesheet.css', FORM_FOLDERS_BASENAME ),
 				'version' => '1.0.0',
 				'enqueue' => [
 					[ 'query' => 'page=gf-form-folders' ],
@@ -454,7 +454,7 @@ class Form_Folders extends GFAddOn {
         $scripts = [
             [
                 'handle'  => 'form-folders-scripts',
-                'src'     => plugins_url( 'assets/js/folders_script.js', $this->_full_path ),
+                'src'     => plugins_url( 'assets/js/folders_script.js', FORM_FOLDERS_BASENAME ),
                 'version' => '1.0.0',
                 'deps'    => [ 'jquery' ],
                 'enqueue' => [

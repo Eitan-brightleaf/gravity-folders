@@ -14,7 +14,7 @@ add_action(
 		if ( ! method_exists( 'GFForms', 'include_addon_framework' ) ) {
 			return;
 		}
-		require_once 'class-form-folders.php';
+		require_once 'includes/class-form-folders.php';
 
 		GFAddOn::register( 'Form_Folders' );
 	}
