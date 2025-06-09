@@ -291,7 +291,7 @@ class Gravity_Ops_Form_Folders extends GFAddOn {
 		}
 
 		if ( empty( $_POST['folderID'] ) || empty( $_POST['folderName'] ) ) {
-			wp_send_json_error( [ 'message' => __( 'Missing required parameters.', 'my-textdomain' ) ], 400 );
+			wp_send_json_error( [ 'message' => 'Missing required parameters.' ], 400 );
 			wp_die();
 		}
 
@@ -300,16 +300,16 @@ class Gravity_Ops_Form_Folders extends GFAddOn {
 
 		$folder = get_term( $folder_id, 'gf_form_folders' );
 		if ( is_wp_error( $folder ) || ! $folder ) {
-			wp_send_json_error( [ 'message' => __( 'The specified folder does not exist.', 'my-textdomain' ) ], 404 );
+			wp_send_json_error( [ 'message' => 'The specified folder does not exist.' ], 404 );
 		}
 
 		// Update the folder name
 		$updated_folder = wp_update_term( $folder_id, 'gf_form_folders', [ 'name' => $folder_name ] );
 		if ( is_wp_error( $updated_folder ) ) {
-			wp_send_json_error( [ 'message' => __( 'Failed to rename the folder. Please try again.', 'my-textdomain' ) ] );
+			wp_send_json_error( [ 'message' => 'Failed to rename the folder. Please try again.' ] );
 		}
 
-		wp_send_json_success( [ 'message' => __( 'Folder renamed successfully.', 'my-textdomain' ) ] );
+		wp_send_json_success( [ 'message' => 'Folder renamed successfully.' ] );
 		wp_die();
 	}
 
@@ -704,14 +704,14 @@ class Gravity_Ops_Form_Folders extends GFAddOn {
                         $folder_link = admin_url( 'admin.php?page=' . $this->_slug . '&folder_id=' . $folder->term_id . '&view_folder_nonce=' . $view_folder_nonce );
                         ?>
                         <li class="folder-item">
-                            <a href="<?= esc_url( $folder_link ); ?>">
-                                <span class="dashicons dashicons-category folder-icon"></span> <?= esc_html( $folder->name ); ?> (<?= esc_html( $form_count ); ?>)
+                            <a href="<?php echo esc_url( $folder_link ); ?>">
+                                <span class="dashicons dashicons-category folder-icon"></span> <?php echo esc_html( $folder->name ); ?> (<?php echo esc_html( $form_count ); ?>)
                             </a>
                         <?php
 						if ( ! $form_count ) {
                             ?>
 							&nbsp;&nbsp;
-							<button class="button delete-folder-button" data-folder-id="<?= esc_attr( $folder->term_id ); ?>" data-nonce="<?= esc_attr( $delete_folder_nonce ); ?>">Delete Folder</button>
+							<button class="button delete-folder-button" data-folder-id="<?php echo esc_attr( $folder->term_id ); ?>" data-nonce="<?php echo esc_attr( $delete_folder_nonce ); ?>">Delete Folder</button>
 							<?php
 						}
                         ?>
@@ -743,7 +743,7 @@ class Gravity_Ops_Form_Folders extends GFAddOn {
 									$assigned_folders = wp_get_object_terms( $form['id'], 'gf_form_folders', [ 'fields' => 'ids' ] );
 									if ( empty( $assigned_folders ) ) {
                                         ?>
-										<option value="<?= esc_attr( $form['id'] ); ?>"><?= esc_html( $form['title'] ); ?></option>
+										<option value="<?php echo esc_attr( $form['id'] ); ?>"><?php echo esc_html( $form['title'] ); ?></option>
 										<?php
 									}
 								}
@@ -756,7 +756,7 @@ class Gravity_Ops_Form_Folders extends GFAddOn {
 								<?php
 								foreach ( $folders as $folder ) {
                                     ?>
-									<option value="<?= esc_attr( $folder->term_id ); ?>"><?= esc_html( $folder->name ); ?></option>
+									<option value="<?php echo esc_attr( $folder->term_id ); ?>"><?php echo esc_html( $folder->name ); ?></option>
 									<?php
 								}
 								?>
@@ -841,9 +841,9 @@ class Gravity_Ops_Form_Folders extends GFAddOn {
 						}
 						?>
 						<li>
-							<a href="<?= esc_url( $setting['url'] ); ?>" class="settings-item">
-								<?= wp_kses( $icon_output, $combined_allowed_html ); ?>
-								<?= esc_html( $setting['label'] ); ?>
+							<a href="<?php echo esc_url( $setting['url'] ); ?>" class="settings-item">
+								<?php echo wp_kses( $icon_output, $combined_allowed_html ); ?>
+								<?php echo esc_html( $setting['label'] ); ?>
 							</a>
 						</li>
 						<?php
@@ -866,13 +866,13 @@ class Gravity_Ops_Form_Folders extends GFAddOn {
     private function render_buttons_td_section( $form, $remove_form_nonce, $duplicate_form_nonce, $trash_form_nonce ) {
         ?>
                 <td>
-                    <button type="button" class="update-form button" data-action="<?= esc_attr( $this->prefix ); ?>remove_form_from_folder" data-form-id="<?php echo esc_attr( $form['id'] ); ?>" data-nonce="<?php echo esc_attr( $remove_form_nonce ); ?>">
+                    <button type="button" class="update-form button" data-action="<?php echo esc_attr( $this->prefix ); ?>remove_form_from_folder" data-form-id="<?php echo esc_attr( $form['id'] ); ?>" data-nonce="<?php echo esc_attr( $remove_form_nonce ); ?>">
                         Remove
                     </button>
-                    <button type="button" class="update-form button" data-action="<?= esc_attr( $this->prefix ); ?>duplicate_form" data-form-id="<?php echo esc_attr( $form['id'] ); ?>" data-nonce="<?php echo esc_attr( $duplicate_form_nonce ); ?>">
+                    <button type="button" class="update-form button" data-action="<?php echo esc_attr( $this->prefix ); ?>duplicate_form" data-form-id="<?php echo esc_attr( $form['id'] ); ?>" data-nonce="<?php echo esc_attr( $duplicate_form_nonce ); ?>">
                         Duplicate
                     </button>
-                    <button type="button" class="update-form button" data-action="<?= esc_attr( $this->prefix ); ?>trash_form" data-form-id="<?php echo esc_attr( $form['id'] ); ?>" data-nonce="<?php echo esc_attr( $trash_form_nonce ); ?>">
+                    <button type="button" class="update-form button" data-action="<?php echo esc_attr( $this->prefix ); ?>trash_form" data-form-id="<?php echo esc_attr( $form['id'] ); ?>" data-nonce="<?php echo esc_attr( $trash_form_nonce ); ?>">
                         Trash
                     </button>
                 </td>
@@ -893,7 +893,7 @@ class Gravity_Ops_Form_Folders extends GFAddOn {
 			$gp_live_preview = GP_Live_Preview::get_instance();
 			$preview_url     = $gp_live_preview->add_options_to_url( $gp_live_preview->get_preview_url( $form['id'] ) );
 		?>
-			| <a href="<?= esc_url( $preview_url ); ?>" target="_blank">Live Preview</a>
+			| <a href="<?php echo esc_url( $preview_url ); ?>" target="_blank">Live Preview</a>
 			<?php
 	}
     /**
