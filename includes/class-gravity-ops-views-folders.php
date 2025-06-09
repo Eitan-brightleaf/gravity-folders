@@ -56,13 +56,13 @@ class Gravity_Ops_Views_Folders extends GFAddOn {
 	 *
 	 * @var array
 	 */
-	protected $_capabilities = [ 'gf_form_folders_uninstall' ];
+	protected $_capabilities = [ 'go_gravity_folders_uninstall' ];
 	/**
 	 * Holds the capability required for uninstallation.
 	 *
 	 * @var string
 	 */
-	protected $_capabilities_uninstall = 'gf_form_folders_uninstall';
+	protected $_capabilities_uninstall = 'go_gravity_folders_uninstall';
 	/**
 	 * Holds the singleton instance of the class.
 	 *
@@ -70,6 +70,13 @@ class Gravity_Ops_Views_Folders extends GFAddOn {
 	 */
 	private static ?self $_instance = null;
 	// phpcs:enable PSR2.Classes.PropertyDeclaration.Underscore
+
+	/**
+     * The prefix to be used by the plugin. Gravity Ops-Gravity Folders
+     *
+     * @var string
+     */
+	private $prefix = 'go_gf_';
 
 	/**
 	 * Returns the singleton instance of this class.
@@ -97,13 +104,13 @@ class Gravity_Ops_Views_Folders extends GFAddOn {
 		parent::init();
 		$this->register_views_folders_taxonomy();
 
-		add_action( 'wp_ajax_create_view_folder', [ $this, 'handle_create_folder' ] );
-		add_action( 'wp_ajax_assign_views_to_folder', [ $this, 'handle_assign_views_to_folder' ] );
-		add_action( 'wp_ajax_remove_view_from_folder', [ $this, 'handle_remove_view_from_folder' ] );
-		add_action( 'wp_ajax_rename_view_folder', [ $this, 'handle_folder_renaming' ] );
-		add_action( 'wp_ajax_delete_view_folder', [ $this, 'handle_folder_deletion' ] );
-		add_action( 'wp_ajax_clone_view', [ $this, 'handle_clone_view' ] );
-		add_action( 'wp_ajax_trash_view', [ $this, 'handle_trash_view' ] );
+		add_action( "wp_ajax_{$this->prefix}create_view_folder", [ $this, 'handle_create_folder' ] );
+		add_action( "wp_ajax_{$this->prefix}assign_views_to_folder", [ $this, 'handle_assign_views_to_folder' ] );
+		add_action( "wp_ajax_{$this->prefix}remove_view_from_folder", [ $this, 'handle_remove_view_from_folder' ] );
+		add_action( "wp_ajax_{$this->prefix}rename_view_folder", [ $this, 'handle_folder_renaming' ] );
+		add_action( "wp_ajax_{$this->prefix}delete_view_folder", [ $this, 'handle_folder_deletion' ] );
+		add_action( "wp_ajax_{$this->prefix}clone_view", [ $this, 'handle_clone_view' ] );
+		add_action( "wp_ajax_{$this->prefix}trash_view", [ $this, 'handle_trash_view' ] );
 	}
 
 	/**
@@ -550,28 +557,28 @@ class Gravity_Ops_Views_Folders extends GFAddOn {
 									    <a href="<?php echo esc_url( $edit_view_link ); ?>">Edit</a> |
                                         <a href="<?php echo esc_url( get_permalink( $view->ID ) ); ?>">View</a> |
                                         <?php if ( $form ) : ?>
-                                            <a href="<?php echo esc_url( admin_url( 'admin.php?page=gf_edit_forms&id=' . $form_id ) ); ?>"><?php echo esc_html( $form_title ); ?></a> |
+                                            <a href="<?php echo esc_url( admin_url( 'admin.php?page=gf_edit_forms&id=' . $form_id ) ); ?>"><?php echo esc_html( $form_title ); ?></a>
                                         <?php else : ?>
-                                            <?php echo esc_html( $form_title ); ?> |
+                                            <?php echo esc_html( $form_title ); ?>
                                         <?php endif; ?>
                                     </td>
 									<!--Actions-->
 									<td>
-                                        <button type="button" class="update-view button" data-action="remove_view_from_folder" data-view-id="<?php echo esc_attr( $view->ID ); ?>" data-nonce="<?php echo esc_attr( $remove_view_nonce ); ?>">
+                                        <button type="button" class="update-view button" data-action="<?= esc_attr( $this->prefix ); ?>remove_view_from_folder" data-view-id="<?php echo esc_attr( $view->ID ); ?>" data-nonce="<?php echo esc_attr( $remove_view_nonce ); ?>">
                                             Remove
                                         </button>
                                         <?php
                                         // Add clone button
                                         $clone_view_nonce = wp_create_nonce( 'clone_view' );
                                         ?>
-                                        <button type="button" class="update-view button" data-action="clone_view" data-view-id="<?php echo esc_attr( $view->ID ); ?>" data-nonce="<?php echo esc_attr( $clone_view_nonce ); ?>">
+                                        <button type="button" class="update-view button" data-action="<?= esc_attr( $this->prefix ); ?>clone_view" data-view-id="<?php echo esc_attr( $view->ID ); ?>" data-nonce="<?php echo esc_attr( $clone_view_nonce ); ?>">
                                             Clone
                                         </button>
                                         <?php
                                         // Add trash button
                                         $trash_view_nonce = wp_create_nonce( 'trash_view' );
                                         ?>
-                                        <button type="button" class="update-view button" data-action="trash_view" data-view-id="<?php echo esc_attr( $view->ID ); ?>" data-nonce="<?php echo esc_attr( $trash_view_nonce ); ?>">
+                                        <button type="button" class="update-view button" data-action="<?= esc_attr( $this->prefix ); ?>trash_view" data-view-id="<?php echo esc_attr( $view->ID ); ?>" data-nonce="<?php echo esc_attr( $trash_view_nonce ); ?>">
                                             Trash
                                         </button>
                                     </td>

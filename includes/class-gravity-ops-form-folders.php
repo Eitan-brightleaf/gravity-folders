@@ -26,7 +26,7 @@ class Gravity_Ops_Form_Folders extends GFAddOn {
 	 *
 	 * @var string
 	 */
-	protected $_slug = 'form-folders';
+	protected $_slug = 'forms-folders';
 	/**
 	 * The basename path of the plugin
 	 *
@@ -44,25 +44,25 @@ class Gravity_Ops_Form_Folders extends GFAddOn {
 	 *
 	 * @var string
 	 */
-	protected $_title = 'Form Folders for Gravity Forms';
+	protected $_title = 'Gravity Folders';
 	/**
 	 * The short title of the plugin.
 	 *
 	 * @var string
 	 */
-	protected $_short_title = 'Form Folders';
+	protected $_short_title = 'Gravity Folders';
 	/**
 	 * Holds a list of capabilities.
 	 *
 	 * @var array
 	 */
-	protected $_capabilities = [ 'gf_form_folders_uninstall' ];
+	protected $_capabilities = [ 'go_gravity_folders_uninstall' ];
 	/**
 	 * Holds the capability required for uninstallation.
 	 *
 	 * @var string
 	 */
-	protected $_capabilities_uninstall = 'gf_form_folders_uninstall';
+	protected $_capabilities_uninstall = 'go_gravity_folders_uninstall';
 	/**
 	 * Holds the singleton instance of the class.
 	 *
@@ -70,6 +70,13 @@ class Gravity_Ops_Form_Folders extends GFAddOn {
 	 */
 	private static ?self $_instance = null;
 	// phpcs:enable PSR2.Classes.PropertyDeclaration.Underscore
+
+	/**
+     * The prefix to be used by the plugin. Gravity Ops-Gravity Folders
+     *
+     * @var string
+     */
+	private $prefix = 'go_gf_';
 
 	/**
 	 * Returns the singleton instance of this class.
@@ -97,13 +104,13 @@ class Gravity_Ops_Form_Folders extends GFAddOn {
 		parent::init();
 		$this->register_form_folders_taxonomy();
 
-		add_action( 'wp_ajax_create_folder', [ $this, 'handle_create_folder' ] );
-		add_action( 'wp_ajax_assign_forms_to_folder', [ $this, 'handle_assign_forms_to_folder' ] );
-		add_action( 'wp_ajax_remove_form_from_folder', [ $this, 'handle_remove_form_from_folder' ] );
-		add_action( 'wp_ajax_rename_folder', [ $this, 'handle_folder_renaming' ] );
-		add_action( 'wp_ajax_delete_folder', [ $this, 'handle_folder_deletion' ] );
-        add_action( 'wp_ajax_duplicate_form', [ $this, 'handle_duplicate_form' ] );
-        add_action( 'wp_ajax_trash_form', [ $this, 'handle_trash_form' ] );
+		add_action( "wp_ajax_{$this->prefix}create_folder", [ $this, 'handle_create_folder' ] );
+		add_action( "wp_ajax_{$this->prefix}assign_forms_to_folder", [ $this, 'handle_assign_forms_to_folder' ] );
+		add_action( "wp_ajax_{$this->prefix}remove_form_from_folder", [ $this, 'handle_remove_form_from_folder' ] );
+		add_action( "wp_ajax_{$this->prefix}rename_folder", [ $this, 'handle_folder_renaming' ] );
+		add_action( "wp_ajax_{$this->prefix}delete_folder", [ $this, 'handle_folder_deletion' ] );
+        add_action( "wp_ajax_{$this->prefix}duplicate_form", [ $this, 'handle_duplicate_form' ] );
+        add_action( "wp_ajax_{$this->prefix}trash_form", [ $this, 'handle_trash_form' ] );
 	}
 
 	/**
@@ -127,7 +134,7 @@ class Gravity_Ops_Form_Folders extends GFAddOn {
 			'Form Folders',
 			'Form Folders',
 			'gform_full_access',
-			'gf-form-folders',
+			$this->_slug,
 			[ $this, 'form_folders_page' ]
 		);
 	}
@@ -439,7 +446,7 @@ class Gravity_Ops_Form_Folders extends GFAddOn {
 				'src'     => plugins_url( 'assets/css/folders_stylesheet.css', GRAVITY_FOLDERS_BASENAME ),
 				'version' => '1.0.0',
 				'enqueue' => [
-					[ 'query' => 'page=gf-form-folders' ],
+					[ 'query' => 'page=' . $this->_slug ],
 				],
 			],
 		];
@@ -459,7 +466,7 @@ class Gravity_Ops_Form_Folders extends GFAddOn {
                 'version' => '1.0.0',
                 'deps'    => [ 'jquery' ],
                 'enqueue' => [
-                    [ 'query' => 'page=gf-form-folders' ],
+                    [ 'query' => 'page=' . $this->_slug ],
                 ],
             ],
         ];
@@ -517,7 +524,7 @@ class Gravity_Ops_Form_Folders extends GFAddOn {
 				<h1>Forms in Folder: <?php echo esc_html( $folder->name ); ?> </h1>
 				<!--Back button-->
 				<br>
-				<a href="<?php echo esc_url( admin_url( 'admin.php?page=gf-form-folders' ) ); ?>" class="button">
+				<a href="<?php echo esc_url( admin_url( 'admin.php?page=' . $this->_slug ) ); ?>" class="button">
 					Back to All Folders
 				</a>
 				<br><br>
@@ -694,7 +701,7 @@ class Gravity_Ops_Form_Folders extends GFAddOn {
 
 					foreach ( $folders as $folder ) {
 						$form_count  = count( get_objects_in_term( $folder->term_id, 'gf_form_folders' ) );
-                        $folder_link = admin_url( 'admin.php?page=gf-form-folders&folder_id=' . $folder->term_id . '&view_folder_nonce=' . $view_folder_nonce );
+                        $folder_link = admin_url( 'admin.php?page=' . $this->_slug . '&folder_id=' . $folder->term_id . '&view_folder_nonce=' . $view_folder_nonce );
                         ?>
                         <li class="folder-item">
                             <a href="<?= esc_url( $folder_link ); ?>">
@@ -859,13 +866,13 @@ class Gravity_Ops_Form_Folders extends GFAddOn {
     private function render_buttons_td_section( $form, $remove_form_nonce, $duplicate_form_nonce, $trash_form_nonce ) {
         ?>
                 <td>
-                    <button type="button" class="update-form button" data-action="remove_form_from_folder" data-form-id="<?php echo esc_attr( $form['id'] ); ?>" data-nonce="<?php echo esc_attr( $remove_form_nonce ); ?>">
+                    <button type="button" class="update-form button" data-action="<?= esc_attr( $this->prefix ); ?>remove_form_from_folder" data-form-id="<?php echo esc_attr( $form['id'] ); ?>" data-nonce="<?php echo esc_attr( $remove_form_nonce ); ?>">
                         Remove
                     </button>
-                    <button type="button" class="update-form button" data-action="duplicate_form" data-form-id="<?php echo esc_attr( $form['id'] ); ?>" data-nonce="<?php echo esc_attr( $duplicate_form_nonce ); ?>">
+                    <button type="button" class="update-form button" data-action="<?= esc_attr( $this->prefix ); ?>duplicate_form" data-form-id="<?php echo esc_attr( $form['id'] ); ?>" data-nonce="<?php echo esc_attr( $duplicate_form_nonce ); ?>">
                         Duplicate
                     </button>
-                    <button type="button" class="update-form button" data-action="trash_form" data-form-id="<?php echo esc_attr( $form['id'] ); ?>" data-nonce="<?php echo esc_attr( $trash_form_nonce ); ?>">
+                    <button type="button" class="update-form button" data-action="<?= esc_attr( $this->prefix ); ?>trash_form" data-form-id="<?php echo esc_attr( $form['id'] ); ?>" data-nonce="<?php echo esc_attr( $trash_form_nonce ); ?>">
                         Trash
                     </button>
                 </td>
