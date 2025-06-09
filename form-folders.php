@@ -8,6 +8,17 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 
+if ( function_exists( 'register_form_folders_submenu' ) ) {
+	add_action(
+        'admin_notices',
+        function () {
+			echo '<div class="notice notice-error"><p>The Form Folders snippet version has been detected. Please deactivate it before using this plugin.</p></div>';
+		}
+        );
+
+	return;
+}
+
 add_action(
 	'gform_loaded',
 	function () {
