@@ -11,7 +11,7 @@ GFForms::include_addon_framework();
  *
  * This class extends the GFAddOn and is responsible for handling the Form Folders for Gravity Forms plugin.
  */
-class Form_Folders extends GFAddOn {
+class Gravity_Ops_Form_Folders extends GFAddOn {
 
 
 	// phpcs:disable PSR2.Classes.PropertyDeclaration.Underscore
@@ -20,7 +20,7 @@ class Form_Folders extends GFAddOn {
 	 *
 	 * @var string
 	 */
-	protected $_version = FORM_FOLDERS_VERSION;
+	protected $_version = GRAVITY_FOLDERS_VERSION;
 	/**
 	 * A string representing the slug used for the plugin.
 	 *
@@ -32,7 +32,7 @@ class Form_Folders extends GFAddOn {
 	 *
 	 * @var string
 	 */
-	protected $_path = FORM_FOLDERS_BASENAME;
+	protected $_path = GRAVITY_FOLDERS_BASENAME;
 	/**
 	 * The full file path of the current script.
 	 *
@@ -436,7 +436,7 @@ class Form_Folders extends GFAddOn {
 		$styles = [
 			[
 				'handle'  => 'form-folders-styles',
-				'src'     => plugins_url( 'assets/css/folders_stylesheet.css', FORM_FOLDERS_BASENAME ),
+				'src'     => plugins_url( 'assets/css/folders_stylesheet.css', GRAVITY_FOLDERS_BASENAME ),
 				'version' => '1.0.0',
 				'enqueue' => [
 					[ 'query' => 'page=gf-form-folders' ],
@@ -455,7 +455,7 @@ class Form_Folders extends GFAddOn {
         $scripts = [
             [
                 'handle'  => 'form-folders-scripts',
-                'src'     => plugins_url( 'assets/js/folders_script.js', FORM_FOLDERS_BASENAME ),
+                'src'     => plugins_url( 'assets/js/folders_script.js', GRAVITY_FOLDERS_BASENAME ),
                 'version' => '1.0.0',
                 'deps'    => [ 'jquery' ],
                 'enqueue' => [

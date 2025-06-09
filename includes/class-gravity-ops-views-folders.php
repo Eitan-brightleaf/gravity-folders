@@ -12,7 +12,7 @@ GFForms::include_addon_framework();
  * This class extends the GFAddOn and is responsible for handling the Views Folders for GravityView plugin.
  * It duplicates the functionality of Form_Folders but for GravityView views.
  */
-class Views_Folders extends GFAddOn {
+class Gravity_Ops_Views_Folders extends GFAddOn {
 
 	// phpcs:disable PSR2.Classes.PropertyDeclaration.Underscore
 	/**
@@ -20,7 +20,7 @@ class Views_Folders extends GFAddOn {
 	 *
 	 * @var string
 	 */
-	protected $_version = FORM_FOLDERS_VERSION;
+	protected $_version = GRAVITY_FOLDERS_VERSION;
 	/**
 	 * A string representing the slug used for the plugin.
 	 *
@@ -32,7 +32,7 @@ class Views_Folders extends GFAddOn {
 	 *
 	 * @var string
 	 */
-	protected $_path = FORM_FOLDERS_BASENAME;
+	protected $_path = GRAVITY_FOLDERS_BASENAME;
 	/**
 	 * The full file path of the current script.
 	 *
@@ -401,7 +401,7 @@ class Views_Folders extends GFAddOn {
 		$styles = [
 			[
 				'handle'  => 'view-folders-styles',
-				'src'     => plugins_url( 'assets/css/folders_stylesheet.css', FORM_FOLDERS_BASENAME ),
+				'src'     => plugins_url( 'assets/css/folders_stylesheet.css', GRAVITY_FOLDERS_BASENAME ),
 				'version' => '1.0.0',
 				'enqueue' => [
 					[ 'query' => 'page=gv-view-folders' ],
@@ -420,7 +420,7 @@ class Views_Folders extends GFAddOn {
         $scripts = [
             [
                 'handle'  => 'view-folders-scripts',
-                'src'     => plugins_url( 'assets/js/views_folders_script.js', FORM_FOLDERS_BASENAME ),
+                'src'     => plugins_url( 'assets/js/views_folders_script.js', GRAVITY_FOLDERS_BASENAME ),
                 'version' => '1.0.0',
                 'deps'    => [ 'jquery' ],
                 'enqueue' => [
