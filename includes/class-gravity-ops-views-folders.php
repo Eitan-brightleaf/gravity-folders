@@ -20,7 +20,7 @@ class Gravity_Ops_Views_Folders extends GFAddOn {
 	 *
 	 * @var string
 	 */
-	protected $_version = GRAVITY_FOLDERS_VERSION;
+	protected $_version = FOLDERS_4_GRAVITY_VERSION;
 	/**
 	 * A string representing the slug used for the plugin.
 	 *
@@ -32,7 +32,7 @@ class Gravity_Ops_Views_Folders extends GFAddOn {
 	 *
 	 * @var string
 	 */
-	protected $_path = GRAVITY_FOLDERS_BASENAME;
+	protected $_path = FOLDERS_4_GRAVITY_BASENAME;
 	/**
 	 * The full file path of the current script.
 	 *
@@ -56,13 +56,13 @@ class Gravity_Ops_Views_Folders extends GFAddOn {
 	 *
 	 * @var array
 	 */
-	protected $_capabilities = [ 'go_gravity_folders_uninstall' ];
+	protected $_capabilities = [ 'go_folders_4_gravity_uninstall' ];
 	/**
 	 * Holds the capability required for uninstallation.
 	 *
 	 * @var string
 	 */
-	protected $_capabilities_uninstall = 'go_gravity_folders_uninstall';
+	protected $_capabilities_uninstall = 'go_folders_4_gravity_uninstall';
 	/**
 	 * Holds the singleton instance of the class.
 	 *
@@ -72,11 +72,11 @@ class Gravity_Ops_Views_Folders extends GFAddOn {
 	// phpcs:enable PSR2.Classes.PropertyDeclaration.Underscore
 
 	/**
-     * The prefix to be used by the plugin. Gravity Ops-Gravity Folders
+     * The prefix to be used by the plugin. Gravity Ops-Folders4Gravity
      *
      * @var string
      */
-	private $prefix = 'go_gf_';
+	private $prefix = 'go_f4g_';
 
 	/**
 	 * Returns the singleton instance of this class.
@@ -408,7 +408,7 @@ class Gravity_Ops_Views_Folders extends GFAddOn {
 		$styles = [
 			[
 				'handle'  => 'view-folders-styles',
-				'src'     => plugins_url( 'assets/css/folders_stylesheet.css', GRAVITY_FOLDERS_BASENAME ),
+				'src'     => plugins_url( 'assets/css/folders_stylesheet.css', FOLDERS_4_GRAVITY_BASENAME ),
 				'version' => '1.0.0',
 				'enqueue' => [
 					[ 'query' => 'page=gv-view-folders' ],
@@ -427,7 +427,7 @@ class Gravity_Ops_Views_Folders extends GFAddOn {
         $scripts = [
             [
                 'handle'  => 'view-folders-scripts',
-                'src'     => plugins_url( 'assets/js/views_folders_script.js', GRAVITY_FOLDERS_BASENAME ),
+                'src'     => plugins_url( 'assets/js/views_folders_script.js', FOLDERS_4_GRAVITY_BASENAME ),
                 'version' => '1.0.0',
                 'deps'    => [ 'jquery' ],
                 'enqueue' => [

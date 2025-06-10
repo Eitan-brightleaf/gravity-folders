@@ -1,4 +1,4 @@
-=== Gravity Folders ===
+=== Folders4Gravity ===
 Tested up to: 6.8
 Tags: GravityForms, gravityview, folders, organization, management
 Stable tag: 1.0.0
@@ -10,7 +10,7 @@ Organize your Gravity Forms and GravityView forms into folders for better manage
 
 == Description ==
 
-Gravity Folders provides an intuitive way to organize your Gravity Forms and GravityView forms into folders, making it easier to manage large numbers of forms and views.
+Folders4Gravity provides an intuitive way to organize your Gravity Forms and Gravity Views into folders, making it easier to manage large numbers of forms and views.
 
 = Features =
 
@@ -34,7 +34,7 @@ This plugin does not collect or store any personal data.
 
 == Installation ==
 
-1. Upload the `gravity-folders` from the Upload Plugin section within the plugin page on the admin dashboard
+1. Upload the `folders4gravity` zip file from the Upload Plugin section within the plugin page on the admin dashboard
 2. Activate the plugin through the 'Plugins' menu in WordPress
 3. Navigate to 'Forms' > 'Form Folders' to manage your Gravity Forms folders
 4. If GravityView is installed, navigate to 'GravityKit' > 'View Folders' to manage your GravityView folders

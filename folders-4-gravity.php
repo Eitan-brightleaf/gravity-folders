@@ -1,7 +1,7 @@
 <?php
 /**
- * Plugin Name: Gravity Folders
- * Plugin URI: https://digital.brightleaf.info/gravity-folders/
+ * Plugin Name: Folders4Gravity
+ * Plugin URI: https://digital.brightleaf.info/Folders4Gravity/
  * Author URI: https://digital.brightleaf.info/
  * Description: Organize your Gravity Forms and Gravity Views by folders.
  * Version: 1.0.0
@@ -44,8 +44,8 @@ add_action(
 	}
 );
 
-define( 'GRAVITY_FOLDERS_VERSION', '1.0.0' );
-define( 'GRAVITY_FOLDERS_BASENAME', plugin_basename( __FILE__ ) );
+define( 'FOLDERS_4_GRAVITY_VERSION', '1.0.0' );
+define( 'FOLDERS_4_GRAVITY_BASENAME', plugin_basename( __FILE__ ) );
 
 /**
  * Returns the instance of the Form_Folders class.
