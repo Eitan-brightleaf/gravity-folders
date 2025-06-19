@@ -133,6 +133,15 @@ class Gravity_Ops_Form_Folders extends GFAddOn {
         );
 	}
 
+    /**
+     * Renders the dashboard widget displaying available form and view folders.
+     *
+     * The method retrieves the terms associated with "gf_form_folders" and "gv_view_folders"
+     * taxonomies, counts the number of objects in each folder, and outputs an HTML structure
+     * with a list of links to the respective folder pages.
+     *
+     * @return void
+     */
     public function dashboard_widget() {
         $folders = get_terms(
             [
