@@ -77,7 +77,8 @@ jQuery(($) => {
 
 	$('.copyable').on('click', function () {
 		const $el = $(this);
-		navigator.clipboard.writeText($el.html())
+		navigator.clipboard
+			.writeText($el.html())
 			.then(() => {
 				$el.css('background-color', '#d4edda'); // success green
 				setTimeout(() => {
@@ -113,4 +114,44 @@ jQuery(($) => {
 			nonce,
 		});
 	});
+	if (typeof FOLDERS4GRAVITY !== 'undefined') {
+		const tableBody = document.querySelector('.sortable-forms');
+
+		if (tableBody) {
+			Sortable.create(tableBody, {
+				animation: 150,
+				handle: '.drag-handle',
+				onEnd: () => {
+					const order = Array.from(
+						tableBody.querySelectorAll('tr')
+					).map((row) => row.dataset.formId);
+
+					$('html, body').css('cursor', 'wait');
+					$.post(ajaxurl, {
+						action: 'go_f4g_save_form_order',
+						folder_id: FOLDERS4GRAVITY.folder_id,
+						nonce: FOLDERS4GRAVITY.nonce,
+						order,
+					})
+						.done((response) => {
+							if (!response.success) {
+								console.error(
+									'Failed to save order:',
+									response.data || 'Unknown error'
+								);
+							}
+						})
+						.fail((xhr, status, error) => {
+							console.error(
+								'AJAX error while saving order:',
+								error
+							);
+						})
+						.always(() => {
+							$('html, body').css('cursor', 'default');
+						});
+				},
+			});
+		}
+	}
 });

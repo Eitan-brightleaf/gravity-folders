@@ -111,6 +111,7 @@ class Gravity_Ops_Form_Folders extends GFAddOn {
 		add_action( "wp_ajax_{$this->prefix}delete_folder", [ $this, 'handle_folder_deletion' ] );
         add_action( "wp_ajax_{$this->prefix}duplicate_form", [ $this, 'handle_duplicate_form' ] );
         add_action( "wp_ajax_{$this->prefix}trash_form", [ $this, 'handle_trash_form' ] );
+        add_action( "wp_ajax_{$this->prefix}save_form_order", [ $this, 'ajax_save_form_order' ] );
 	}
 
 	/**
@@ -162,7 +163,9 @@ class Gravity_Ops_Form_Folders extends GFAddOn {
         ?>
         <div class="folder-columns">
             <div class="forms">
-                <h1 class="folder-type-title">Form Folders</h1>
+                <a href="<?php echo esc_url( admin_url( 'admin.php?page=' . $this->_slug ) ); ?>" target="_blank">
+                    <h1 class="folder-type-title">Form Folders</h1>
+                </a>
 		        <br>
 		        <ul>
 			        <?php
@@ -182,7 +185,9 @@ class Gravity_Ops_Form_Folders extends GFAddOn {
 		        </ul>
 		    </div>
 		    <div class="views">
-                <h1 class="folder-type-title">View Folders</h1>
+		        <a target="_blank" href="<?php echo esc_url( admin_url( 'admin.php?page=gv-view-folders' ) ); ?>">
+		            <h1 class="folder-type-title">View Folders</h1>
+                </a>
                 <br>
                 <ul>
                     <?php
@@ -516,6 +521,31 @@ class Gravity_Ops_Form_Folders extends GFAddOn {
         }
     }
 
+    /**
+     * Saves the form order for a specific folder via an AJAX request.
+     *
+     * @return void
+     */
+    public function ajax_save_form_order() {
+		// Security check
+		if ( ! current_user_can( 'gform_full_access' ) || ! check_ajax_referer( 'save_form_order', 'nonce', false ) ) {
+			wp_send_json_error( [ 'message' => 'Unauthorized' ], 403 );
+		}
+
+		// Validate and sanitize inputs
+		$folder_id = isset( $_POST['folder_id'] ) ? absint( $_POST['folder_id'] ) : 0;
+		$order     = isset( $_POST['order'] ) ? array_map( 'absint', (array) $_POST['order'] ) : [];
+
+		if ( ! $folder_id || empty( $order ) ) {
+			wp_send_json_error( [ 'message' => 'Missing folder ID or order' ], 400 );
+		}
+
+		update_term_meta( $folder_id, "{$this->prefix}form_order", $order );
+
+		wp_send_json_success( [ 'message' => 'Form order saved.' ] );
+	}
+
+
 	/**
 	 * Loads stylesheets for the plugin
 	 *
@@ -554,14 +584,24 @@ class Gravity_Ops_Form_Folders extends GFAddOn {
     public function scripts() {
         $scripts = [
             [
-                'handle'  => 'form-folders-scripts',
-                'src'     => plugins_url( 'assets/js/folders_script.js', FOLDERS_4_GRAVITY_BASENAME ),
-                'version' => '1.0.0',
-                'deps'    => [ 'jquery' ],
-                'enqueue' => [
+                'handle'    => 'form-folders-scripts',
+                'src'       => plugins_url( 'assets/js/folders_script.js', FOLDERS_4_GRAVITY_BASENAME ),
+                'version'   => '1.0.0',
+                'deps'      => [ 'jquery', 'sortable4folders' ],
+				'in_footer' => true,
+                'enqueue'   => [
                     [ 'query' => 'page=' . $this->_slug ],
                 ],
             ],
+            [
+				'handle'    => 'sortable4folders',
+				'src'       => plugins_url( 'assets/js/Sortable.min.js', FOLDERS_4_GRAVITY_BASENAME ),
+				'version'   => '1.15.6',
+				'in_footer' => true,
+				'enqueue'   => [
+					[ 'query' => 'page=' . $this->_slug ],
+				],
+			],
         ];
         return array_merge( parent::scripts(), $scripts );
     }
@@ -579,12 +619,6 @@ class Gravity_Ops_Form_Folders extends GFAddOn {
 		if ( ! current_user_can( 'gform_full_access' ) ) {
 			wp_die( 'You do not have sufficient permissions to access this page.' );
 		}
-
-        wp_add_inline_script(
-		'form-folders-scripts',
-		'const ajaxurl = "' . admin_url( 'admin-ajax.php' ) . '";',
-		'before'
-	    );
 
 		if ( rgget( 'folder_id' ) ) {
 			$this->render_single_folder_page();
@@ -611,6 +645,46 @@ class Gravity_Ops_Form_Folders extends GFAddOn {
 				echo '<div class="error"><p>Invalid folder.</p></div>';
 				return;
 			}
+
+            $save_form_order_nonce = wp_create_nonce( 'save_form_order' );
+            wp_add_inline_script(
+                    'form-folders-scripts',
+                    sprintf(
+                            'const FOLDERS4GRAVITY = %s;',
+                            wp_json_encode(
+                                [
+									'folder_id' => $folder_id,
+									'nonce'     => $save_form_order_nonce,
+								]
+                            )
+                    ),
+                    'before'
+            );
+
+            $forms       = GFAPI::get_forms();
+            $saved_order = get_term_meta( $folder_id, "{$this->prefix}form_order", true ) ?: [];
+            // Filter forms assigned to this folder
+			$forms_in_folder = array_filter(
+			$forms,
+			function ( $form ) use ( $folder_id ) {
+				$terms = wp_get_object_terms( $form['id'], 'gf_form_folders', [ 'fields' => 'ids' ] );
+				return in_array( $folder_id, $terms, true );
+			}
+			);
+
+			// Sort by saved order
+			usort(
+			$forms_in_folder,
+			function ( $a, $b ) use ( $saved_order ) {
+				$pos_a = array_search( $a['id'], $saved_order, true );
+				$pos_b = array_search( $b['id'], $saved_order, true );
+
+				// If not found in saved order, push to end
+				return ( false === $pos_a ? PHP_INT_MAX : $pos_a )
+					<=> ( false === $pos_b ? PHP_INT_MAX : $pos_b );
+			}
+			);
+
 			?>
 
 			<div class="wrap">
@@ -626,17 +700,16 @@ class Gravity_Ops_Form_Folders extends GFAddOn {
 				<table class="wp-list-table widefat fixed striped">
 					<thead>
 						<tr>
+						    <th style="width:30px;"></th>
 							<th>Form Name</th>
 							<th>Shortcode</th>
 							<th>Links</th>
 							<th>Actions</th>
 						</tr>
 					</thead>
-					<tbody>
+					<tbody class="sortable-forms">
 
 						<?php
-						$forms                 = GFAPI::get_forms();
-						$found                 = false;
 						$allowed_svg_tags      = [
 							'svg'  => [
 								'xmlns'             => true,
@@ -669,37 +742,33 @@ class Gravity_Ops_Form_Folders extends GFAddOn {
                         $rename_folder_nonce   = wp_create_nonce( 'rename_folder' );
                         $assign_form_nonce     = wp_create_nonce( 'assign_form' );
 
-						foreach ( $forms as $form ) {
-							$form_terms = wp_get_object_terms( $form['id'], 'gf_form_folders', [ 'fields' => 'ids' ] );
-
-							$edit_form_link = admin_url( 'admin.php?page=gf_edit_forms&id=' . $form['id'] );
-
-							if ( in_array( $folder_id, $form_terms, true ) ) {
-								$found = true;
+						if ( empty( $forms_in_folder ) ) {
+							echo '<tr><td colspan="4">No forms found in this folder.</td></tr>';
+						} else {
+							foreach ( $forms_in_folder as $form ) {
+								$edit_form_link = admin_url( 'admin.php?page=gf_edit_forms&id=' . $form['id'] );
 								?>
-								<tr>
-									<!--Form Title-->
-									<td>
-										<a href="<?php echo esc_url( $edit_form_link ); ?>"><?php echo esc_html( $form['title'] ); ?></a>
-									</td>
-									<!--Shortcode-->
-									<td>
-										<code class="copyable">
-											[gravityform id="<?php echo esc_attr( $form['id'] ); ?>" title="false" description="false"]
-										</code>
-									</td>
-									<!--Links-->
-									<?php $this->render_links_td_section( $form, $allowed_svg_tags, $combined_allowed_html ); ?>
-									<!--Buttons-->
-									<?php $this->render_buttons_td_section( $form, $remove_form_nonce, $duplicate_form_nonce, $trash_form_nonce ); ?>
-								</tr>
+                                    <tr data-form-id="<?php echo esc_attr( $form['id'] ); ?>">
+                                        <td class="drag-handle"><span class="dashicons dashicons-move"></span></td>
+                                        <!--Form Title-->
+                                        <td>
+                                            <a href="<?php echo esc_url( $edit_form_link ); ?>"><?php echo esc_html( $form['title'] ); ?></a>
+                                        </td>
+                                        <!--Shortcode-->
+                                        <td>
+                                            <code class="copyable">
+                                                [gravityform id="<?php echo esc_attr( $form['id'] ); ?>" title="false" description="false"]
+                                            </code>
+                                        </td>
+                                        <!--Links-->
+								            <?php $this->render_links_td_section( $form, $allowed_svg_tags, $combined_allowed_html ); ?>
+                                        <!--Buttons-->
+								        <?php $this->render_buttons_td_section( $form, $remove_form_nonce, $duplicate_form_nonce, $trash_form_nonce ); ?>
+                                    </tr>
 								<?php
 							}
 						}
 
-						if ( ! $found ) {
-							echo '<tr><td colspan="4">No forms found in this folder.</td></tr>';
-						}
 						?>
 					</tbody>
 				</table>

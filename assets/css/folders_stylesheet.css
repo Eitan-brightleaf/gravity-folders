@@ -74,3 +74,10 @@ li {
 .folder-forms-item {
     flex: 1;
 }
+
+.drag-handle {
+    cursor: grab;
+}
+.drag-handle:active {
+    cursor: grabbing;
+}
