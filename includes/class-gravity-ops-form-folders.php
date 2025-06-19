@@ -121,7 +121,80 @@ class Gravity_Ops_Form_Folders extends GFAddOn {
 	public function init_admin() {
 		parent::init_admin();
 		add_action( 'admin_menu', [ $this, 'register_form_folders_submenu' ], 15 );
+        add_action(
+            'wp_dashboard_setup',
+            function () {
+				wp_add_dashboard_widget(
+                    'folders_4_gravity_dashboard_widget',
+                    'Form Folders',
+                    [ $this, 'dashboard_widget' ]
+				);
+			}
+        );
 	}
+
+    public function dashboard_widget() {
+        $folders = get_terms(
+            [
+				'taxonomy'   => 'gf_form_folders',
+				'hide_empty' => false,
+			]
+        );
+
+        $views = get_terms(
+                [
+                    'taxonomy'   => 'gv_view_folders',
+					'hide_empty' => false,
+				]
+		);
+
+        $view_folder_nonce = wp_create_nonce( 'view_folder' );
+
+        ?>
+        <div class="folder-columns">
+            <div class="forms">
+                <h1 class="folder-type-title">Form Folders</h1>
+		        <br>
+		        <ul>
+			        <?php
+			        foreach ( $folders as $folder ) {
+                        $form_count  = count( get_objects_in_term( $folder->term_id, 'gf_form_folders' ) );
+                        $folder_link = admin_url( 'admin.php?page=' . $this->_slug . '&folder_id=' . $folder->term_id . '&view_folder_nonce=' . $view_folder_nonce );
+                        ?>
+                        <li class="folder-item">
+                            <a href="<?php echo esc_url( $folder_link ); ?>" target="_blank">
+                                <span class="dashicons dashicons-category folder-icon"></span>
+                                <span class="folder-name"><?php echo esc_html( $folder->name ); ?> (<?php echo esc_html( $form_count ); ?>)</span>
+                            </a>
+                        </li>
+	    		        <?php
+    			    }
+			        ?>
+		        </ul>
+		    </div>
+		    <div class="views">
+                <h1 class="folder-type-title">View Folders</h1>
+                <br>
+                <ul>
+                    <?php
+                    foreach ( $views as $view ) {
+                        $views_count = count( get_objects_in_term( $view->term_id, 'gv_view_folders' ) );
+                        $folder_link = admin_url( 'admin.php?page=gv-view-folders&folder_id=' . $view->term_id . '&view_folder_nonce=' . $view_folder_nonce );
+                        ?>
+                        <li class="folder-item">
+                            <a href="<?php echo esc_url( $folder_link ); ?>" target="_blank">
+                                <span class="dashicons dashicons-category folder-icon"></span>
+                                <span class="folder-name"><?php echo esc_html( $view->name ); ?> (<?php echo esc_html( $views_count ); ?>)</span>
+                            </a>
+                        </li>
+                        <?php
+                    }
+                    ?>
+                </ul>
+            </div>
+        </div>
+		<?php
+    }
 
 	/**
 	 * Registers a submenu page under the Gravity Forms menu for form folders.
@@ -449,6 +522,17 @@ class Gravity_Ops_Form_Folders extends GFAddOn {
 					[ 'query' => 'page=' . $this->_slug ],
 				],
 			],
+			[
+                'handle'  => 'folders4formswidget',
+                'src'     => plugins_url( 'assets/css/dashboard-widget.css', FOLDERS_4_GRAVITY_BASENAME ),
+                'version' => '1.0.0',
+                'enqueue' => [
+					function () {
+							$screen = get_current_screen();
+							return is_admin() && $screen && 'dashboard' === $screen->id;
+					},
+				],
+            ],
 		];
 		return array_merge( parent::styles(), $styles );
 	}
@@ -910,7 +994,7 @@ class Gravity_Ops_Form_Folders extends GFAddOn {
 		}
 
 			// Get connected views for this form
-			$connected_views = GVCommon::get_connected_views( $form['id'], array( 'post_status' => 'any' ) );
+			$connected_views = GVCommon::get_connected_views( $form['id'], [ 'post_status' => 'any' ] );
 
 			// If no connected views, show a link to create one
 		if ( empty( $connected_views ) ) {
