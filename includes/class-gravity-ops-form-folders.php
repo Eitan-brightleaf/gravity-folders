@@ -185,7 +185,7 @@ class Gravity_Ops_Form_Folders extends GFAddOn {
 		        </ul>
 		    </div>
 		    <div class="views">
-		        <a target="_blank" href="<?php echo esc_url( admin_url( 'admin.php?page=gv-view-folders' ) ); ?>">
+		        <a target="_blank" href="<?php echo esc_url( admin_url( 'admin.php?page=gv-views-folders' ) ); ?>">
 		            <h1 class="folder-type-title">View Folders</h1>
                 </a>
                 <br>
