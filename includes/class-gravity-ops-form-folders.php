@@ -193,7 +193,7 @@ class Gravity_Ops_Form_Folders extends GFAddOn {
                     <?php
                     foreach ( $views as $view ) {
                         $views_count = count( get_objects_in_term( $view->term_id, 'gv_view_folders' ) );
-                        $folder_link = admin_url( 'admin.php?page=gv-view-folders&folder_id=' . $view->term_id . '&view_folder_nonce=' . $view_folder_nonce );
+                        $folder_link = admin_url( 'admin.php?page=gv-views-folders&folder_id=' . $view->term_id . '&view_folder_nonce=' . $view_folder_nonce );
                         ?>
                         <li class="folder-item">
                             <a href="<?php echo esc_url( $folder_link ); ?>" target="_blank">
