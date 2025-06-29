@@ -65,23 +65,10 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Setup PHP
-        uses: shivammathur/setup-php@v2
-        with:
-          php-version: '8.0'
-          tools: composer
-      - name: Prepare plugin for deploy
-        run: |
-          mkdir deploy
-          cp -r assets deploy/
-          cp -r includes deploy/
-          cp readme.txt deploy/
-          cp folders-4-gravity.php deploy/
       - name: WordPress Plugin Deploy
         uses: 10up/action-wordpress-plugin-deploy@stable
         env:
           SLUG: folders-4-gravity
-          BUILD_DIR: deploy
           SVN_USERNAME: ${{ secrets.SVN_USERNAME }}
           SVN_PASSWORD: ${{ secrets.SVN_PASSWORD }}
           VERSION: ${{ needs.get_version.outputs.version }}
