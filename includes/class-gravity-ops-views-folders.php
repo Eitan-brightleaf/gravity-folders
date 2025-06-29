@@ -29,7 +29,7 @@ class Gravity_Ops_Views_Folders extends GFAddOn {
 	 *
 	 * @var string
 	 */
-	protected $_slug = 'gv-views-folders';
+	protected $_slug = 'go_f4g_gv-views-folders';
 	/**
 	 * The basename path of the plugin
 	 *
@@ -80,6 +80,19 @@ class Gravity_Ops_Views_Folders extends GFAddOn {
 	 * @var string
 	 */
 	private $prefix = 'go_f4g_';
+
+        /**
+         * Stores the name of the custom taxonomy.
+         *
+         * @var string
+         */
+    private $taxonomy_name = 'go_f4g_gv_view_folders';
+    /**
+     * Stores the taxonomy name for viewing folders.
+     *
+     * @var string
+     */
+    private $forms_taxonomy_name = 'go_f4g_form_folders';
 
 	/**
 	 * Returns the singleton instance of this class.
@@ -169,15 +182,15 @@ class Gravity_Ops_Views_Folders extends GFAddOn {
 	/**
 	 * Registers a custom taxonomy for organizing views into folders.
 	 *
-	 * The taxonomy 'gv_view_folders' is associated with the 'gravityview' post type. It is not publicly queryable,
+	 * The taxonomy 'go_f4g_gv_view_folders' is associated with the 'gravityview' post type. It is not publicly queryable,
 	 * does not have URL rewrites, and supports a non-hierarchical structure. It includes an admin column for easier management in the admin interface.
 	 *
 	 * @return void
 	 */
 	private function register_views_folders_taxonomy() {
-		if ( ! taxonomy_exists( 'gv_view_folders' ) ) {
+		if ( ! taxonomy_exists( $this->taxonomy_name ) ) {
 			register_taxonomy(
-				'gv_view_folders',
+				$this->taxonomy_name,
 				'gravityview',
 				[
 					'label'             => 'View Folders',
@@ -194,7 +207,7 @@ class Gravity_Ops_Views_Folders extends GFAddOn {
 	 * Handles the creation of a new folder for views.
 	 *
 	 * Validates the current user's permission and the provided folder name.
-	 * Inserts a new term into the 'gv_view_folders' taxonomy. Returns a success or error message depending on the outcome.
+	 * Inserts a new term into the 'go_f4g_gv_view_folders' taxonomy. Returns a success or error message depending on the outcome.
 	 *
 	 * @return void Sends a JSON response indicating success or failure.
 	 */
@@ -215,7 +228,7 @@ class Gravity_Ops_Views_Folders extends GFAddOn {
 		}
 
 		$folder_name = sanitize_text_field( wp_unslash( $_POST['folderName'] ) );
-		$inserted    = wp_insert_term( $folder_name, 'gv_view_folders' );
+		$inserted    = wp_insert_term( $folder_name, $this->taxonomy_name );
 
 		if ( is_wp_error( $inserted ) ) {
 			wp_send_json_error( [ 'message' => $inserted->get_error_message() ], 403 );
@@ -255,7 +268,7 @@ class Gravity_Ops_Views_Folders extends GFAddOn {
 		$folder_id = absint( $_POST['folderID'] );
 
 		foreach ( $view_ids as $view_id ) {
-			$result = wp_set_object_terms( $view_id, [ $folder_id ], 'gv_view_folders' );
+			$result = wp_set_object_terms( $view_id, [ $folder_id ], $this->taxonomy_name );
 			if ( is_wp_error( $result ) ) {
 				wp_send_json_error( [ 'message' => $result->get_error_message() ] );
 				wp_die();
@@ -292,7 +305,7 @@ class Gravity_Ops_Views_Folders extends GFAddOn {
 
 		$view_id = absint( $_POST['viewID'] );
 
-		$result = wp_set_object_terms( $view_id, [], 'gv_view_folders' );
+		$result = wp_set_object_terms( $view_id, [], $this->taxonomy_name );
 
 		if ( is_wp_error( $result ) ) {
 			wp_send_json_error( [ 'message' => $result->get_error_message() ], 403 );
@@ -326,13 +339,13 @@ class Gravity_Ops_Views_Folders extends GFAddOn {
 		$folder_id   = absint( $_POST['folderID'] );
 		$folder_name = sanitize_text_field( wp_unslash( $_POST['folderName'] ) );
 
-		$folder = get_term( $folder_id, 'gv_view_folders' );
+		$folder = get_term( $folder_id, $this->taxonomy_name );
 		if ( is_wp_error( $folder ) || ! $folder ) {
 			wp_send_json_error( [ 'message' => 'The specified folder does not exist.' ], 404 );
 		}
 
 		// Update the folder name
-		$updated_folder = wp_update_term( $folder_id, 'gv_view_folders', [ 'name' => $folder_name ] );
+		$updated_folder = wp_update_term( $folder_id, $this->taxonomy_name, [ 'name' => $folder_name ] );
 		if ( is_wp_error( $updated_folder ) ) {
 			wp_send_json_error( [ 'message' => 'Failed to rename the folder. Please try again.' ] );
 		}
@@ -355,11 +368,11 @@ class Gravity_Ops_Views_Folders extends GFAddOn {
 			wp_send_json_error( [ 'message' => 'Missing required parameters.' ], 400 );
 		}
 		$folder_id = absint( $_POST['folderID'] );
-		$folder    = get_term( $folder_id, 'gv_view_folders' );
+		$folder    = get_term( $folder_id, $this->taxonomy_name );
 		if ( is_wp_error( $folder ) || ! $folder ) {
 			wp_send_json_error( [ 'message' => 'The specified folder does not exist.' ], 404 );
 		}
-		$result = wp_delete_term( $folder_id, 'gv_view_folders' );
+		$result = wp_delete_term( $folder_id, $this->taxonomy_name );
 		if ( is_wp_error( $result ) ) {
 			wp_send_json_error( [ 'message' => 'Failed to delete the folder. Please try again.' ], 403 );
 		} else {
@@ -409,13 +422,13 @@ class Gravity_Ops_Views_Folders extends GFAddOn {
 
 		// Remove all views from folders
 		foreach ( $views as $view ) {
-			wp_set_object_terms( $view->ID, [], 'gv_view_folders' );
+			wp_set_object_terms( $view->ID, [], $this->taxonomy_name );
 		}
 
 		// Delete the taxonomy folders
 		$folder_ids = get_terms(
 			[
-				'taxonomy'   => 'gv_view_folders',
+				'taxonomy'   => $this->taxonomy_name,
 				'hide_empty' => false,
 				'fields'     => 'ids',
 			]
@@ -423,7 +436,7 @@ class Gravity_Ops_Views_Folders extends GFAddOn {
 
 		if ( ! is_wp_error( $folder_ids ) ) {
 			foreach ( $folder_ids as $folder ) {
-				wp_delete_term( $folder, 'gv_view_folders' );
+				wp_delete_term( $folder, $this->taxonomy_name );
 			}
 		}
 	}
@@ -510,7 +523,7 @@ class Gravity_Ops_Views_Folders extends GFAddOn {
 		$folder_id = isset( $_GET['folder_id'] ) ? absint( $_GET['folder_id'] ) : 0;
 
 		if ( $folder_id ) {
-			$folder = get_term( $folder_id, 'gv_view_folders' );
+			$folder = get_term( $folder_id, $this->taxonomy_name );
 			if ( is_wp_error( $folder ) || ! $folder ) {
 				echo '<div class="error"><p>Invalid folder.</p></div>';
 				return;
@@ -544,7 +557,7 @@ class Gravity_Ops_Views_Folders extends GFAddOn {
 			$views_in_folder = array_filter(
 				$views,
 				function ( $view ) use ( $folder_id ) {
-					$terms = wp_get_object_terms( $view->ID, 'gv_view_folders', [ 'fields' => 'ids' ] );
+					$terms = wp_get_object_terms( $view->ID, $this->taxonomy_name, [ 'fields' => 'ids' ] );
 					return in_array( $folder_id, $terms, true );
 				}
 			);
@@ -687,7 +700,7 @@ class Gravity_Ops_Views_Folders extends GFAddOn {
 							]
 						);
 						foreach ( $all_views as $view ) {
-							$assigned_folders = wp_get_object_terms( $view->ID, 'gv_view_folders', [ 'fields' => 'ids' ] );
+							$assigned_folders = wp_get_object_terms( $view->ID, $this->taxonomy_name, [ 'fields' => 'ids' ] );
 							if ( empty( $assigned_folders ) ) {
 								echo '<option value="' . esc_attr( $view->ID ) . '">' . esc_html( $view->post_title ) . '</option>';
 							}
@@ -746,7 +759,7 @@ class Gravity_Ops_Views_Folders extends GFAddOn {
 
 		// If we have a folder ID, assign the new view to that folder
 		if ( $folder_id ) {
-			wp_set_object_terms( $new_view_id, [ $folder_id ], 'gv_view_folders' );
+			wp_set_object_terms( $new_view_id, [ $folder_id ], $this->taxonomy_name );
 		}
 
 		wp_send_json_success( [ 'message' => 'View cloned successfully.' ] );
@@ -825,7 +838,7 @@ class Gravity_Ops_Views_Folders extends GFAddOn {
 		$view_id = absint( $_POST['viewID'] );
 
 		// Remove from folder first
-		wp_set_object_terms( $view_id, [], 'gv_view_folders' );
+		wp_set_object_terms( $view_id, [], $this->taxonomy_name );
 
 		// Trash the view
 		$result = wp_trash_post( $view_id );
@@ -851,7 +864,7 @@ class Gravity_Ops_Views_Folders extends GFAddOn {
 		$delete_folder_nonce = wp_create_nonce( 'delete_view_folder' );
 		$folders             = get_terms(
 			[
-				'taxonomy'   => 'gv_view_folders',
+				'taxonomy'   => $this->taxonomy_name,
 				'hide_empty' => false,
 			]
 		);
@@ -862,7 +875,7 @@ class Gravity_Ops_Views_Folders extends GFAddOn {
 				<ul>
 					<?php
 					foreach ( $folders as $folder ) {
-						$view_count  = count( get_objects_in_term( $folder->term_id, 'gv_view_folders' ) );
+						$view_count  = count( get_objects_in_term( $folder->term_id, $this->taxonomy_name ) );
 						$folder_link = admin_url( 'admin.php?page=' . $this->_slug . '&folder_id=' . $folder->term_id . '&view_folder_nonce=' . $view_folder_nonce );
 						?>
 						<li class="folder-item">
@@ -908,7 +921,7 @@ class Gravity_Ops_Views_Folders extends GFAddOn {
 									]
 								);
 								foreach ( $all_views as $view ) {
-									$assigned_folders = wp_get_object_terms( $view->ID, 'gv_view_folders', [ 'fields' => 'ids' ] );
+									$assigned_folders = wp_get_object_terms( $view->ID, $this->taxonomy_name, [ 'fields' => 'ids' ] );
 									if ( empty( $assigned_folders ) ) {
 										?>
 										<option value="<?php echo esc_attr( $view->ID ); ?>"><?php echo esc_html( $view->post_title ); ?></option>

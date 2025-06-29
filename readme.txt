@@ -5,6 +5,7 @@ Stable tag: 1.0.0
 Requires PHP: 8.0
 License: GPL-2.0+
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
+Contributors: eitanatbrightleaf
 
 Organize your Gravity Forms and GravityView forms into folders for better management and organization.
 

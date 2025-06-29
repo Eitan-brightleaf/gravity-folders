@@ -26,7 +26,7 @@ class Gravity_Ops_Form_Folders extends GFAddOn {
 	 *
 	 * @var string
 	 */
-	protected $_slug = 'forms-folders';
+	protected $_slug = 'go_f4g_forms-folders';
 	/**
 	 * The basename path of the plugin
 	 *
@@ -77,6 +77,19 @@ class Gravity_Ops_Form_Folders extends GFAddOn {
      * @var string
      */
 	private $prefix = 'go_f4g_';
+
+    /**
+     * Stores the name of the custom taxonomy.
+     *
+     * @var string
+     */
+    private $taxonomy_name = 'go_f4g_form_folders';
+    /**
+     * Stores the taxonomy name for viewing folders.
+     *
+     * @var string
+     */
+    private $view_taxonomy_name = 'go_f4g_gv_view_folders';
 
 	/**
 	 * Returns the singleton instance of this class.
@@ -137,7 +150,7 @@ class Gravity_Ops_Form_Folders extends GFAddOn {
     /**
      * Renders the dashboard widget displaying available form and view folders.
      *
-     * The method retrieves the terms associated with "gf_form_folders" and "gv_view_folders"
+     * The method retrieves the terms associated with "go_f4g_form_folders" and "go_f4g_gv_view_folders"
      * taxonomies, counts the number of objects in each folder, and outputs an HTML structure
      * with a list of links to the respective folder pages.
      *
@@ -146,14 +159,14 @@ class Gravity_Ops_Form_Folders extends GFAddOn {
     public function dashboard_widget() {
         $folders = get_terms(
             [
-				'taxonomy'   => 'gf_form_folders',
+				'taxonomy'   => "$this->taxonomy_name",
 				'hide_empty' => false,
 			]
         );
 
         $views = get_terms(
                 [
-                    'taxonomy'   => 'gv_view_folders',
+                    'taxonomy'   => $this->view_taxonomy_name,
 					'hide_empty' => false,
 				]
 		);
@@ -170,7 +183,7 @@ class Gravity_Ops_Form_Folders extends GFAddOn {
 		        <ul>
 			        <?php
 			        foreach ( $folders as $folder ) {
-                        $form_count  = count( get_objects_in_term( $folder->term_id, 'gf_form_folders' ) );
+                        $form_count  = count( get_objects_in_term( $folder->term_id, $this->taxonomy_name ) );
                         $folder_link = admin_url( 'admin.php?page=' . $this->_slug . '&folder_id=' . $folder->term_id . '&view_folder_nonce=' . $view_folder_nonce );
                         ?>
                         <li class="folder-item">
@@ -192,7 +205,7 @@ class Gravity_Ops_Form_Folders extends GFAddOn {
                 <ul>
                     <?php
                     foreach ( $views as $view ) {
-                        $views_count = count( get_objects_in_term( $view->term_id, 'gv_view_folders' ) );
+                        $views_count = count( get_objects_in_term( $view->term_id, $this->view_taxonomy_name ) );
                         $folder_link = admin_url( 'admin.php?page=gv-views-folders&folder_id=' . $view->term_id . '&view_folder_nonce=' . $view_folder_nonce );
                         ?>
                         <li class="folder-item">
@@ -228,15 +241,15 @@ class Gravity_Ops_Form_Folders extends GFAddOn {
 	/**
 	 * Registers a custom taxonomy for organizing forms into folders.
 	 *
-	 * The taxonomy 'gf_form_folders' is associated with the 'gf_form' post type. It is not publicly queryable,
+	 * The taxonomy 'go_f4g_form_folders' is associated with the 'gf_form' post type. It is not publicly queryable,
 	 * does not have URL rewrites, and supports a non-hierarchical structure. It includes an admin column for easier management in the admin interface.
 	 *
 	 * @return void
 	 */
 	private function register_form_folders_taxonomy() {
-		if ( ! taxonomy_exists( 'gf_form_folders' ) ) {
+		if ( ! taxonomy_exists( $this->taxonomy_name ) ) {
 			register_taxonomy(
-			'gf_form_folders',
+			$this->taxonomy_name,
 			'gf_form',
 			[
 				'label'             => 'Form Folders',
@@ -253,7 +266,7 @@ class Gravity_Ops_Form_Folders extends GFAddOn {
 	 * Handles the creation of a new folder for forms.
 	 *
 	 * Validates the current user's permission and the provided folder name.
-	 * Inserts a new term into the 'gf_form_folders' taxonomy. Returns a success or error message depending on the outcome.
+	 * Inserts a new term into the 'go_f4g_form_folders' taxonomy. Returns a success or error message depending on the outcome.
 	 *
 	 * @return void Sends a JSON response indicating success or failure.
 	 */
@@ -274,7 +287,7 @@ class Gravity_Ops_Form_Folders extends GFAddOn {
 		}
 
 		$folder_name = sanitize_text_field( wp_unslash( $_POST['folderName'] ) );
-		$inserted    = wp_insert_term( $folder_name, 'gf_form_folders' );
+		$inserted    = wp_insert_term( $folder_name, $this->taxonomy_name );
 
 		if ( is_wp_error( $inserted ) ) {
 			wp_send_json_error( [ 'message' => $inserted->get_error_message() ], 403 );
@@ -314,7 +327,7 @@ class Gravity_Ops_Form_Folders extends GFAddOn {
 		$folder_id = absint( $_POST['folderID'] );
 
 		foreach ( $form_ids as $form_id ) {
-            $result = wp_set_object_terms( $form_id, [ $folder_id ], 'gf_form_folders' );
+            $result = wp_set_object_terms( $form_id, [ $folder_id ], $this->taxonomy_name );
 			if ( is_wp_error( $result ) ) {
 				wp_send_json_error( [ 'message' => $result->get_error_message() ] );
 				wp_die();
@@ -351,7 +364,7 @@ class Gravity_Ops_Form_Folders extends GFAddOn {
 
 		$form_id = absint( $_POST['formID'] );
 
-		$result = wp_set_object_terms( $form_id, [], 'gf_form_folders' );
+		$result = wp_set_object_terms( $form_id, [], $this->taxonomy_name );
 
 		if ( is_wp_error( $result ) ) {
 			wp_send_json_error( [ 'message' => $result->get_error_message() ], 403 );
@@ -385,13 +398,13 @@ class Gravity_Ops_Form_Folders extends GFAddOn {
 		$folder_id   = absint( $_POST['folderID'] );
 		$folder_name = sanitize_text_field( wp_unslash( $_POST['folderName'] ) );
 
-		$folder = get_term( $folder_id, 'gf_form_folders' );
+		$folder = get_term( $folder_id, $this->taxonomy_name );
 		if ( is_wp_error( $folder ) || ! $folder ) {
 			wp_send_json_error( [ 'message' => 'The specified folder does not exist.' ], 404 );
 		}
 
 		// Update the folder name
-		$updated_folder = wp_update_term( $folder_id, 'gf_form_folders', [ 'name' => $folder_name ] );
+		$updated_folder = wp_update_term( $folder_id, $this->taxonomy_name, [ 'name' => $folder_name ] );
 		if ( is_wp_error( $updated_folder ) ) {
 			wp_send_json_error( [ 'message' => 'Failed to rename the folder. Please try again.' ] );
 		}
@@ -414,11 +427,11 @@ class Gravity_Ops_Form_Folders extends GFAddOn {
 			wp_send_json_error( [ 'message' => 'Missing required parameters.' ], 400 );
 		}
 		$folder_id = absint( $_POST['folderID'] );
-		$folder    = get_term( $folder_id, 'gf_form_folders' );
+		$folder    = get_term( $folder_id, $this->taxonomy_name );
 		if ( is_wp_error( $folder ) || ! $folder ) {
 			wp_send_json_error( [ 'message' => 'The specified folder does not exist.' ], 404 );
 		}
-		$result = wp_delete_term( $folder_id, 'gf_form_folders' );
+		$result = wp_delete_term( $folder_id, $this->taxonomy_name );
 		if ( is_wp_error( $result ) ) {
 			wp_send_json_error( [ 'message' => 'Failed to delete the folder. Please try again.' ], 403 );
 		} else {
@@ -435,13 +448,13 @@ class Gravity_Ops_Form_Folders extends GFAddOn {
 
         $forms = GFAPI::get_forms();
         foreach ( $forms as $form ) {
-	        wp_set_object_terms( $form['id'], [], 'gf_form_folders' );
+	        wp_set_object_terms( $form['id'], [], $this->taxonomy_name );
         }
 
 		// Delete the taxonomy folders
 		$folder_ids = get_terms(
             [
-				'taxonomy'   => 'gf_form_folders',
+				'taxonomy'   => $this->taxonomy_name,
 				'hide_empty' => false,
 				'fields'     => 'ids',
 			]
@@ -449,7 +462,7 @@ class Gravity_Ops_Form_Folders extends GFAddOn {
 
 		if ( ! is_wp_error( $folder_ids ) ) {
 			foreach ( $folder_ids as $folder ) {
-				wp_delete_term( $folder, 'gf_form_folders' );
+				wp_delete_term( $folder, $this->taxonomy_name );
 			}
 		}
     }
@@ -475,7 +488,7 @@ class Gravity_Ops_Form_Folders extends GFAddOn {
         $result    = GFAPI::duplicate_form( $form_id );
         if ( ! is_wp_error( $result ) ) {
             if ( $folder_id ) {
-                wp_set_object_terms( $result, [ $folder_id ], 'gf_form_folders' );
+                wp_set_object_terms( $result, [ $folder_id ], $this->taxonomy_name );
             }
             wp_send_json_success( [ 'message' => 'Form duplicated successfully.' ] );
         } else {
@@ -505,7 +518,7 @@ class Gravity_Ops_Form_Folders extends GFAddOn {
         $result  = GFFormsModel::trash_form( $form_id ); // method returns true for failure to trash and false for successfully trashing. weird.
         if ( ! is_wp_error( $result ) && ! $result ) {
 
-            $result = wp_set_object_terms( $form_id, [], 'gf_form_folders' );
+            $result = wp_set_object_terms( $form_id, [], $this->taxonomy_name );
 
 			if ( is_wp_error( $result ) ) {
 				GFFormsModel::restore_form( $form_id );
@@ -640,7 +653,7 @@ class Gravity_Ops_Form_Folders extends GFAddOn {
 		$folder_id = isset( $_GET['folder_id'] ) ? absint( $_GET['folder_id'] ) : 0;
 
 		if ( $folder_id ) {
-			$folder = get_term( $folder_id, 'gf_form_folders' );
+			$folder = get_term( $folder_id, $this->taxonomy_name );
 			if ( is_wp_error( $folder ) || ! $folder ) {
 				echo '<div class="error"><p>Invalid folder.</p></div>';
 				return;
@@ -667,7 +680,7 @@ class Gravity_Ops_Form_Folders extends GFAddOn {
 			$forms_in_folder = array_filter(
 			$forms,
 			function ( $form ) use ( $folder_id ) {
-				$terms = wp_get_object_terms( $form['id'], 'gf_form_folders', [ 'fields' => 'ids' ] );
+				$terms = wp_get_object_terms( $form['id'], $this->taxonomy_name, [ 'fields' => 'ids' ] );
 				return in_array( $folder_id, $terms, true );
 			}
 			);
@@ -792,7 +805,7 @@ class Gravity_Ops_Form_Folders extends GFAddOn {
 						<?php
 						$all_forms = GFAPI::get_forms();
 						foreach ( $all_forms as $form ) {
-							$assigned_folders = wp_get_object_terms( $form['id'], 'gf_form_folders', [ 'fields' => 'ids' ] );
+							$assigned_folders = wp_get_object_terms( $form['id'], $this->taxonomy_name, [ 'fields' => 'ids' ] );
 							if ( empty( $assigned_folders ) ) {
 								echo '<option value="' . esc_attr( $form['id'] ) . '">' . esc_html( $form['title'] ) . '</option>';
 							}
@@ -849,7 +862,7 @@ class Gravity_Ops_Form_Folders extends GFAddOn {
         $delete_folder_nonce = wp_create_nonce( 'delete_folder' );
         $folders             = get_terms(
 						            [
-							            'taxonomy'   => 'gf_form_folders',
+							            'taxonomy'   => $this->taxonomy_name,
 							            'hide_empty' => false,
 						            ]
 					            );
@@ -862,7 +875,7 @@ class Gravity_Ops_Form_Folders extends GFAddOn {
 					<?php
 
 					foreach ( $folders as $folder ) {
-						$form_count  = count( get_objects_in_term( $folder->term_id, 'gf_form_folders' ) );
+						$form_count  = count( get_objects_in_term( $folder->term_id, $this->taxonomy_name ) );
                         $folder_link = admin_url( 'admin.php?page=' . $this->_slug . '&folder_id=' . $folder->term_id . '&view_folder_nonce=' . $view_folder_nonce );
                         ?>
                         <li class="folder-item">
@@ -902,7 +915,7 @@ class Gravity_Ops_Form_Folders extends GFAddOn {
 								<?php
 								$all_forms = GFAPI::get_forms();
 								foreach ( $all_forms as $form ) {
-									$assigned_folders = wp_get_object_terms( $form['id'], 'gf_form_folders', [ 'fields' => 'ids' ] );
+									$assigned_folders = wp_get_object_terms( $form['id'], $this->taxonomy_name, [ 'fields' => 'ids' ] );
 									if ( empty( $assigned_folders ) ) {
                                         ?>
 										<option value="<?php echo esc_attr( $form['id'] ); ?>"><?php echo esc_html( $form['title'] ); ?></option>
