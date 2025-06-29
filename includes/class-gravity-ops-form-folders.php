@@ -164,62 +164,31 @@ class Gravity_Ops_Form_Folders extends GFAddOn {
 			]
         );
 
-        $views = get_terms(
-                [
-                    'taxonomy'   => $this->view_taxonomy_name,
-					'hide_empty' => false,
-				]
-		);
-
         $view_folder_nonce = wp_create_nonce( 'view_folder' );
 
         ?>
-        <div class="folder-columns">
-            <div class="forms">
-                <a href="<?php echo esc_url( admin_url( 'admin.php?page=' . $this->_slug ) ); ?>" target="_blank">
-                    <h1 class="folder-type-title">Form Folders</h1>
-                </a>
-		        <br>
-		        <ul>
-			        <?php
-			        foreach ( $folders as $folder ) {
-                        $form_count  = count( get_objects_in_term( $folder->term_id, $this->taxonomy_name ) );
-                        $folder_link = admin_url( 'admin.php?page=' . $this->_slug . '&folder_id=' . $folder->term_id . '&view_folder_nonce=' . $view_folder_nonce );
-                        ?>
-                        <li class="folder-item">
-                            <a href="<?php echo esc_url( $folder_link ); ?>" target="_blank">
-                                <span class="dashicons dashicons-category folder-icon"></span>
-                                <span class="folder-name"><?php echo esc_html( $folder->name ); ?> (<?php echo esc_html( $form_count ); ?>)</span>
-                            </a>
-                        </li>
-	    		        <?php
-    			    }
-			        ?>
-		        </ul>
-		    </div>
-		    <div class="views">
-		        <a target="_blank" href="<?php echo esc_url( admin_url( 'admin.php?page=gv-views-folders' ) ); ?>">
-		            <h1 class="folder-type-title">View Folders</h1>
-                </a>
-                <br>
-                <ul>
-                    <?php
-                    foreach ( $views as $view ) {
-                        $views_count = count( get_objects_in_term( $view->term_id, $this->view_taxonomy_name ) );
-                        $folder_link = admin_url( 'admin.php?page=gv-views-folders&folder_id=' . $view->term_id . '&view_folder_nonce=' . $view_folder_nonce );
-                        ?>
-                        <li class="folder-item">
-                            <a href="<?php echo esc_url( $folder_link ); ?>" target="_blank">
-                                <span class="dashicons dashicons-category folder-icon"></span>
-                                <span class="folder-name"><?php echo esc_html( $view->name ); ?> (<?php echo esc_html( $views_count ); ?>)</span>
-                            </a>
-                        </li>
-                        <?php
-                    }
-                    ?>
-                </ul>
-            </div>
-        </div>
+        <div class="forms">
+            <a href="<?php echo esc_url( admin_url( 'admin.php?page=' . $this->_slug ) ); ?>" target="_blank">
+                <h1 class="folder-type-title">Form Folders</h1>
+            </a>
+		    <br>
+		    <ul>
+			<?php
+			foreach ( $folders as $folder ) {
+				$form_count  = count( get_objects_in_term( $folder->term_id, $this->taxonomy_name ) );
+				$folder_link = admin_url( 'admin.php?page=' . $this->_slug . '&folder_id=' . $folder->term_id . '&view_folder_nonce=' . $view_folder_nonce );
+				?>
+                <li class="folder-item">
+                    <a href="<?php echo esc_url( $folder_link ); ?>" target="_blank">
+                        <span class="dashicons dashicons-category folder-icon"></span>
+                        <span class="folder-name"><?php echo esc_html( $folder->name ); ?> (<?php echo esc_html( $form_count ); ?>)</span>
+                    </a>
+                </li>
+	    		<?php
+			}
+			?>
+		    </ul>
+		</div>
 		<?php
     }
 

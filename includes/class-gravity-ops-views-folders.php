@@ -138,7 +138,61 @@ class Gravity_Ops_Views_Folders extends GFAddOn {
 	public function init_admin() {
 		parent::init_admin();
 		add_action( 'admin_menu', [ $this, 'register_views_folders_submenu' ], 1000 );
+        add_action(
+            'wp_dashboard_setup',
+            function () {
+				wp_add_dashboard_widget(
+                    'folders_4_gravity_views_dashboard_widget',
+                    'Views Folders',
+                    [ $this, 'dashboard_widget' ]
+				);
+			}
+        );
 	}
+
+    /**
+     * Renders the dashboard widget displaying available form and view folders.
+     *
+     * The method retrieves the terms associated with "go_f4g_gv_view_folders"
+     * taxonomies, counts the number of objects in each folder, and outputs an HTML structure
+     * with a list of links to the respective folder pages.
+     *
+     * @return void
+     */
+    public function dashboard_widget() {
+
+        $views             = get_terms(
+                [
+                    'taxonomy'   => $this->taxonomy_name,
+					'hide_empty' => false,
+				]
+		);
+        $view_folder_nonce = wp_create_nonce( 'view_folder' );
+        ?>
+        <div class="views">
+		        <a target="_blank" href="<?php echo esc_url( admin_url( 'admin.php?page=' . $this->_slug ) ); ?>">
+		            <h1 class="folder-type-title">View Folders</h1>
+                </a>
+                <br>
+                <ul>
+                    <?php
+                    foreach ( $views as $view ) {
+                        $views_count = count( get_objects_in_term( $view->term_id, $this->taxonomy_name ) );
+                        $folder_link = admin_url( 'admin.php?page=' . $this->_slug . '&folder_id=' . $view->term_id . '&view_folder_nonce=' . $view_folder_nonce );
+                        ?>
+                        <li class="folder-item">
+                            <a href="<?php echo esc_url( $folder_link ); ?>" target="_blank">
+                                <span class="dashicons dashicons-category folder-icon"></span>
+                                <span class="folder-name"><?php echo esc_html( $view->name ); ?> (<?php echo esc_html( $views_count ); ?>)</span>
+                            </a>
+                        </li>
+                        <?php
+                    }
+                    ?>
+                </ul>
+            </div>
+            <?php
+    }
 
 	/**
 	 * Registers a submenu page under the GravityKit menu for view folders.

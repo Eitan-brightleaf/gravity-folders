@@ -16,22 +16,3 @@
 .folder-type-title {
     text-decoration: underline;
 }
-
-.folder-columns {
-    display: flex;
-    gap: 30px;
-    justify-content: space-between;
-}
-
-.forms,
-.views {
-    flex: 1;
-    min-width: 0; /* allow shrinking */
-}
-
-.drag-handle {
-    cursor: grab;
-}
-.drag-handle:active {
-    cursor: grabbing;
-}
