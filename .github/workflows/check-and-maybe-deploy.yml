@@ -81,7 +81,7 @@ jobs:
         uses: 10up/action-wordpress-plugin-deploy@stable
         env:
           SLUG: folders-4-gravity
-          build_dir: deploy
+          BUILD_DIR: deploy
           SVN_USERNAME: ${{ secrets.SVN_USERNAME }}
           SVN_PASSWORD: ${{ secrets.SVN_PASSWORD }}
           VERSION: ${{ needs.get_version.outputs.version }}
