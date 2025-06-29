@@ -84,6 +84,7 @@ jobs:
           build_dir: deploy
           SVN_USERNAME: ${{ secrets.SVN_USERNAME }}
           SVN_PASSWORD: ${{ secrets.SVN_PASSWORD }}
+          VERSION: ${{ needs.get_version.outputs.version }}
 
 
 
